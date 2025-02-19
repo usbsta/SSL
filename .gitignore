@@ -1,0 +1,21 @@
+﻿# Python cache files
+__pycache__/
+*.py[cod]
+
+# Virtual environment folder (adjust the folder name if needed)
+venv/
+env/
+
+# PyCharm project files
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+
+*.wav
+*.npz
+*.mat
+*.mp4
+
