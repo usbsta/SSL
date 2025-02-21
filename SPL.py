@@ -208,6 +208,8 @@ def main():
     # Filenames for the two audio files (update these with the correct paths)
     file1 = 'measure.wav'
     file2 = 'mems.wav'
+    file3 = 'rode.wav'
+    file4 = 'ultra.wav'
 
     # Define calibration intervals for each file (in seconds)
     # For measure.wav, both calibration segments are used.
@@ -218,14 +220,25 @@ def main():
     calib_94_interval_file2 = (274.3, 278.0)   # 94 dB SPL segment for mems.wav
     calib_114_interval_file2 = (196.0, 200.0)    # This interval will be ignored for mems.wav
 
+    calib_94_interval_file3 = (37.8, 40.8)   # 94 dB SPL segment for mems.wav
+    calib_114_interval_file3 = (41.6, 44.3)    # This interval will be ignored for mems.wav
+
+    calib_94_interval_file4 = (26.0, 28.0)   # 94 dB SPL segment for mems.wav
+    calib_114_interval_file4 = (29.5, 31.5)    # This interval will be ignored for mems.wav
+
     # Process both audio files.
     time1, spl1 = process_audio_file(file1, calib_94_interval_file1, calib_114_interval_file1)
     time2, spl2 = process_audio_file(file2, calib_94_interval_file2, calib_114_interval_file2)
+    time3, spl3 = process_audio_file(file3, calib_94_interval_file3, calib_114_interval_file3)
+    time4, spl4 = process_audio_file(file4, calib_94_interval_file4, calib_114_interval_file4)
 
     # Plot the SPL time series for both audio files.
     plt.figure(figsize=(12, 6))
     plt.plot(time1, spl1, label=f'SPL of {file1}')
     plt.plot(time2, spl2, label=f'SPL of {file2}')
+    plt.plot(time3, spl3, label=f'SPL of {file3}')
+    plt.plot(time4, spl4, label=f'SPL of {file4}')
+
     plt.xlabel('Time (s)')
     plt.ylabel('SPL (dB)')
     plt.title('Time-varying SPL Estimation for Two Audio Files')
