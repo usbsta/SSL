@@ -6,9 +6,14 @@ import csv
 import struct
 import time
 import queue
+import numpy as np
+from scipy.signal import butter, filtfilt
 
-
-
+# =============================================================================
+# GLOBALS AND AUDIO SETTINGS
+# =============================================================================
+# Global processing queue for real-time audio processing
+audio_processing_queue = queue.Queue(maxsize=50)  # NEW
 
 fileNumberFromPythonScript = 0  # init
 placeHolder = 1
@@ -17,231 +22,216 @@ numberOfDevicesConnected = 1  # 1 master device only, 2 master and slave device
 DEVICE_0_NUM = 0  # ALWAYS MASTER DEVICE!!
 DEVICE_1_NUM = 1
 DEVICE_2_NUM = 2
-# ================================================================================================================#
-#                                           AUDIO SETTINGS                                                        #
-# ----------------------------------------------------------------------------------------------------------------#
-""" @brief Set audio sample rate (in Hertz)
-    @param 16KHz   : 16000
-    @param 24KHz   : 24000
-    @param 32KHz   : 32000
-    @param 48KHz   : 48000
-    @param 96KHz   : 96000
-    @param 192KHz  : 192000
-"""
+
+# -------------------------------
+# AUDIO SETTINGS
+# -------------------------------
 audioSamplingRate = 48000
-
-""" @brief Set each audio record duration in seconds
-    @note Can be any value, as long as its a positive integer
-"""
+RATE = audioSamplingRate
 RECORDING_DURATION = 1800
-
-""" @brief Set number of files to record consecutively
-    @note Can be any value, as long as its a positive integer
-"""
 numberOfFilesToRecord = 1
-
-""" @brief Set the audio digital volume
-    @param muted   : 1
-    @param -100dB  : -100
-    @param -99.5dB : -99.5
-    @param 0dB     : 0
-    @param 0.5dB   : 0.5
-    @param 26.5dB  : 26.5
-    @param 27dB    : 27
-"""
 audioDigitalVolume = 0
-
-""" @brief Set audio high pass filter cutoff frequency
-    @param Default cutoff frequency : 1
-    @param 0.00025fs                : 0.00025
-    @param 0.002fs                  : 0.002
-    @param 0.008fs                  : 0.008
-"""
 audioHighPassFilter = 1
-
-""" @brief Set audio gain calibration 
-    @param -0.8dB : -0.8
-    @param -0.7dB : -0.7
-    @param -0.6dB : -0.6
-    @param 0dB    : 0
-    @param 0.1dB  : 0.1
-    @param 0.6dB  : 0.6
-    @param 0.7dB  : 0.7
-"""
 audioGainCalibration = 0
 
-# ================================================================================================================#
-#                                           SENSOR SETTINGS                                                       #
-# ----------------------------------------------------------------------------------------------------------------#
+# -------------------------------
+# SENSOR SETTINGS
+# -------------------------------
 sensorDataBatchSize = 200
-
-""" @brief set accelerometer data rate / sampling frequency
-    @param SHUTDOWN : 0
-    @param 12.5Hz   : 12.5    
-    @param 26Hz     : 26 
-    @param 52Hz     : 52
-    @param 104Hz    : 104
-    @param 208Hz    : 208
-    @param 416Hz    : 416
-    @param 833Hz    : 833
-    @param 1.66KHz  : 1.66
-    @param 3.33KHz  : 3.33
-    @param 6.66KHz  : 6.66
-"""
 accelDataRate = 104
-
-""" @brief set the accelerometer data range
-    @param 2G  : 1
-    @param 4G  : 2
-    @param 8G  : 3
-    @param 16G : 4
-"""
 accelDataRange = 2
-
-""" @brief set gyroscope data rate / sampling frequency
-    @param SHUTDOWN : 0
-    @param 12.5Hz   : 12.5    
-    @param 26Hz     : 26 
-    @param 52Hz     : 52
-    @param 104Hz    : 104
-    @param 208Hz    : 208
-    @param 416Hz    : 416
-    @param 833Hz    : 833
-    @param 1.66KHz  : 1.66
-    @param 3.33KHz  : 3.33
-    @param 6.66KHz  : 6.66
-"""
 gyroDataRate = 104
-
-""" @brief sets gyroscope data range
-  LSM6DS_GYRO_RANGE_125_DPS = 0b0010,
-  LSM6DS_GYRO_RANGE_250_DPS = 0b0000,
-  LSM6DS_GYRO_RANGE_500_DPS = 0b0100,
-  LSM6DS_GYRO_RANGE_1000_DPS = 0b1000,
-  LSM6DS_GYRO_RANGE_2000_DPS = 0b1100,
-  ISM330DHCX_GYRO_RANGE_4000_DPS = 0b0001
-"""
 gyroDataRange = 125
 
-# ================================================================================================================#
-#                                             VARIABLES                                                           #
-# ----------------------------------------------------------------------------------------------------------------#
+# =============================================================================
+# NETWORK VARIABLES
+# =============================================================================
 MASTER_DEVICE_MACRO = 1
 SLAVE_DEVICE_MACRO = 2
 DEVICE_0 = MASTER_DEVICE_MACRO
 DEVICE_1 = SLAVE_DEVICE_MACRO
-DEVICE_0_ETHERNET_IP = "192.168.0.10" + str(DEVICE_0_NUM)  # Master Device IP Address
-DEVICE_1_ETHERNET_IP = "192.168.0.10" + str(DEVICE_1_NUM)  # Slave Device IP Address
-DEVICE_2_ETHERNET_IP = "192.168.0.10" + str(DEVICE_2_NUM)  # Slave Device IP Address
-# DEVICE_0_ETHERNET_IP = "192.168.0.20"+str(DEVICE_0_NUM)  # Master WIFI IP address
-# DEVICE_1_ETHERNET_IP = "192.168.0.20"+str(DEVICE_1_NUM)  # Slave WIFI IP address
-# DEVICE_2_ETHERNET_IP = "192.168.0.20"+str(DEVICE_2_NUM)  # Slave WIFI IP address
-DEVICE_0_WIFI_IP = "192.168.0.20" + str(DEVICE_0_NUM)  # Master WIFI IP address
-DEVICE_1_WIFI_IP = "192.168.0.20" + str(DEVICE_1_NUM)  # Slave WIFI IP address
-DEVICE_2_WIFI_IP = "192.168.0.20" + str(DEVICE_2_NUM)  # Slave WIFI IP address
-DEVICE_0_PORT = 80  # Master Device Port
-DEVICE_1_PORT = 80  # Slave Device Port
-DEVICE_2_PORT = 80  # Slave Device Port
+DEVICE_0_ETHERNET_IP = "192.168.0.10" + str(DEVICE_0_NUM)
+DEVICE_1_ETHERNET_IP = "192.168.0.10" + str(DEVICE_1_NUM)
+DEVICE_2_ETHERNET_IP = "192.168.0.10" + str(DEVICE_2_NUM)
+DEVICE_0_WIFI_IP = "192.168.0.20" + str(DEVICE_0_NUM)
+DEVICE_1_WIFI_IP = "192.168.0.20" + str(DEVICE_1_NUM)
+DEVICE_2_WIFI_IP = "192.168.0.20" + str(DEVICE_2_NUM)
+DEVICE_0_PORT = 80
+DEVICE_1_PORT = 80
+DEVICE_2_PORT = 80
 
-# Define the buffer size for receiving data
-AUDIO_BUFFER_SIZE = 32768  # 102400  # Increased buffer size 32768
-#AUDIO_BUFFER_SIZE = 76800
+# =============================================================================
+# BUFFER AND STATE VARIABLES
+# =============================================================================
+AUDIO_BUFFER_SIZE = 32768
 
-masterDeviceEthernet = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Master device web socket
+masterDeviceEthernet = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+slaveDeviceEthernet = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+slaveDeviceEthernetDeviceNumber2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+masterDeviceWiFi = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+slaveDeviceWiFi = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+slaveDeviceWiFiDeviceNumber2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-slaveDeviceEthernet = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Slave device websocket
-
-slaveDeviceEthernetDeviceNumber2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Slave device websocket
-
-masterDeviceWiFi = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Wifi device websocket
-
-slaveDeviceWiFi = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Wifi device websocket
-
-slaveDeviceWiFiDeviceNumber2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Wifi device websocket
-
-""" @brief Two audio buffers to receive audio
-    @note Double buffering is used so that audio is not missed, while the other buffer is being used to write audio 
-          to the wav file, the other buffer can keep receiving audio data. 
-"""
-
-audioBuffers = [[bytearray(AUDIO_BUFFER_SIZE), bytearray(AUDIO_BUFFER_SIZE)],
-                [bytearray(AUDIO_BUFFER_SIZE), bytearray(AUDIO_BUFFER_SIZE)],
-                [bytearray(AUDIO_BUFFER_SIZE), bytearray(AUDIO_BUFFER_SIZE)], ]
+audioBuffers = [
+    [bytearray(AUDIO_BUFFER_SIZE), bytearray(AUDIO_BUFFER_SIZE)],
+    [bytearray(AUDIO_BUFFER_SIZE), bytearray(AUDIO_BUFFER_SIZE)],
+    [bytearray(AUDIO_BUFFER_SIZE), bytearray(AUDIO_BUFFER_SIZE)]
+]
 
 audioBufferLock = [threading.Lock(), threading.Lock(), threading.Lock()]
-audioBufferReady = [threading.Condition(audioBufferLock[0]), threading.Condition(audioBufferLock[1]),
-                    threading.Condition(audioBufferLock[2]), ]
+audioBufferReady = [threading.Condition(audioBufferLock[0]),
+                    threading.Condition(audioBufferLock[1]),
+                    threading.Condition(audioBufferLock[2])]
 
-# State variables to keep track of the buffer usage
 audioBufferStates = [[False, False], [False, False], [False, False]]
-
 audioBufferDataSizes = [[0, 0], [0, 0], [0, 0]]
 
-# Flag to indicate when we're done receiving data
 doneReceivingAudio = [False, False, False]
-audio_data_size = [0, 0, 0]  # Total size of audio data
-total_samples = [0, 0, 0]  # Total samples received
+audio_data_size = [0, 0, 0]
+total_samples = [0, 0, 0]
 
-# Calculate the total number of samples based on the recording duration
-# num_channels = 8  # Assuming 8 channels
-bits_per_sample = 16  # Assuming 16 bits per sample
+bits_per_sample = 16
 total_samples_to_receive = audioSamplingRate * RECORDING_DURATION
 
-# Calculate the number of channels based on the sampling rate
-""" @brief Calculates the number of channels that should be on based on sampling rate
-    @note This is due to the codec limit
-"""
 if audioSamplingRate > 48000:
-    num_channels = 4  # 4 channels for high sampling rates
+    num_channels = 4
 else:
-    num_channels = 8  # 8 channels for lower sampling rates
-
-""" @brief Function to handle receiving audio data
-    @note This function works on its own thread, in order to speed up the execution time.
-"""
+    num_channels = 8
 
 
-def receiveAudioData(sock, deviceType):
-    global doneReceivingAudio, total_samples
-
+# =============================================================================
+# AUDIO RECEPTION MODIFICATION
+# =============================================================================
+def receiveAudioData(sock, device_type):
+    """
+    Receives audio data from a socket, stores it in buffers, and deposits the raw data
+    into a processing queue for real-time analysis.
+    """
     try:
-        while total_samples[deviceType] < total_samples_to_receive:
-            with audioBufferLock[deviceType]:
-                # Wait for an available buffer to receive data
-                while all(audioBufferStates[deviceType]):
-                    audioBufferReady[deviceType].wait()
+        while total_samples[device_type] < total_samples_to_receive:
+            with audioBufferLock[device_type]:
+                # Wait until an available buffer is free
+                while all(audioBufferStates[device_type]):
+                    audioBufferReady[device_type].wait()
 
-                # Determine which buffer is available
-                audioBufferIndex = audioBufferStates[deviceType].index(False)
+                # Find an available buffer index
+                audioBufferIndex = audioBufferStates[device_type].index(False)
 
-                # Receive data into the available buffer
+                # Receive data from the socket
                 data = sock.recv(AUDIO_BUFFER_SIZE)
                 if not data:
-                    doneReceivingAudio[deviceType] = True
-                    # Notify the writing thread if done
-                    audioBufferReady[deviceType].notify_all()
+                    doneReceivingAudio[device_type] = True
+                    audioBufferReady[device_type].notify_all()
                     break
 
-                # Store the received data in the selected buffer
-                audioBuffers[deviceType][audioBufferIndex][: len(data)] = data
-                audioBufferDataSizes[deviceType][audioBufferIndex] = len(data)
-                audioBufferStates[deviceType][audioBufferIndex] = True
+                # Store the received data into the chosen buffer
+                audioBuffers[device_type][audioBufferIndex][:len(data)] = data
+                audioBufferDataSizes[device_type][audioBufferIndex] = len(data)
+                audioBufferStates[device_type][audioBufferIndex] = True
 
                 # Update the total samples received
                 samples_received = len(data) * 8 // (num_channels * bits_per_sample)
-                total_samples[deviceType] += samples_received
+                total_samples[device_type] += samples_received
 
-                # Notify the writing thread that the buffer is ready to be written
-                audioBufferReady[deviceType].notify_all()
+                # Notify the writing thread that this buffer is now ready
+                audioBufferReady[device_type].notify_all()
 
-        # Mark that we are done receiving audio
-        doneReceivingAudio[deviceType] = True
-        with audioBufferLock[deviceType]:
-            # Notify the writing thread if done
-            audioBufferReady[deviceType].notify_all()
-
+                # NEW: Deposit the data into the processing queue
+                try:
+                    audio_processing_queue.put_nowait(data)
+                except queue.Full:
+                    # If the queue is full, we can choose to discard the chunk or block (here we discard)
+                    pass
     except Exception as e:
         print(f"An error occurred while receiving data: {e}")
+
+
+# =============================================================================
+# REAL-TIME PROCESSING FUNCTION
+# =============================================================================
+# Beamforming (delay-and-sum) function
+def beamform_time(signal_data, mic_positions, azimuth_range, elevation_range, rate, c=343):
+    num_samples = signal_data.shape[0]
+    energy = np.zeros((len(azimuth_range), len(elevation_range)))
+    for az_idx, theta in enumerate(azimuth_range):
+        az_rad = np.radians(theta)
+        for el_idx, phi in enumerate(elevation_range):
+            el_rad = np.radians(phi)
+            direction = np.array([np.cos(el_rad) * np.cos(az_rad),
+                                  np.cos(el_rad) * np.sin(az_rad),
+                                  np.sin(el_rad)])
+            delays = np.dot(mic_positions, direction) / c
+            summed = np.zeros(num_samples)
+            for i, delay in enumerate(delays):
+                shift = int(np.round(delay * rate))
+                summed += np.roll(signal_data[:, i], shift)
+            summed /= signal_data.shape[1]
+            energy[az_idx, el_idx] = np.sum(summed ** 2)
+    return energy
+
+
+# Bandpass filtering functions
+def butter_bandpass(lowcut, highcut, rate, order=5):
+    nyquist = 0.5 * rate
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    b, a = butter(order, [low, high], btype='band')
+    return b, a
+
+
+def apply_bandpass_filter(data, lowcut=400.0, highcut=18000.0, rate=RATE, order=5):
+    b, a = butter_bandpass(lowcut, highcut, rate, order=order)
+    return filtfilt(b, a, data, axis=0)
+
+
+def process_audio_from_queue():
+    # Define beamforming parameters
+    azimuth_range = np.arange(-180, 181, 5)
+    elevation_range = np.arange(0, 91, 5)
+    radius = 0.3  # radius in meters
+    angles = np.linspace(0, 360, 8, endpoint=False)
+    mic_positions = np.array([[radius * np.cos(np.radians(a)),
+                               radius * np.sin(np.radians(a)),
+                               0] for a in angles])
+
+    while True:
+        try:
+            # Get an audio chunk from the processing queue (wait up to 1 second)
+            data = audio_processing_queue.get(timeout=1)
+        except queue.Empty:
+            continue
+
+        try:
+            # Convert raw bytes to a NumPy array (assuming int16 and 8 channels)
+            samples = np.frombuffer(data, dtype=np.int16)
+            sample_count = len(samples) // 8
+            if sample_count < 33:  # Skip if the chunk is too short for filtering
+                audio_processing_queue.task_done()
+                continue
+            samples = samples[:sample_count * 8].reshape((sample_count, 8))
+        except Exception as e:
+            print(f"Conversion error: {e}")
+            audio_processing_queue.task_done()
+            continue
+
+        try:
+            # Apply bandpass filtering (this might fail if the chunk is too short)
+            filtered = apply_bandpass_filter(samples, lowcut=400.0, highcut=18000.0, rate=RATE, order=5)
+        except ValueError as e:
+            print("Skipping chunk due to filtering error:", e)
+            audio_processing_queue.task_done()
+            continue
+
+        # Apply beamforming to get the energy map
+        energy = beamform_time(filtered, mic_positions, azimuth_range, elevation_range, RATE, c=343)
+
+        # Estimate the direction by finding the maximum energy point
+        max_energy_idx = np.unravel_index(np.argmax(energy), energy.shape)
+        estimated_azimuth = azimuth_range[max_energy_idx[0]]
+        estimated_elevation = elevation_range[max_energy_idx[1]]
+        print(f"Estimated Direction: Azimuth {estimated_azimuth}°, Elevation {estimated_elevation}°")
+
+        audio_processing_queue.task_done()
 
 
 # ================================================================================================================#
@@ -2277,94 +2267,105 @@ def generateJson(masterDeviceNetworkForJson, slaveDeviceNetworkForJson, slaveDev
 
 ##############################################################################################################
 import numpy as np
+from scipy.signal import butter, filtfilt
 
+RATE = 48000
 
+# Función de beamforming (delay-and-sum)
+def beamform_time(signal_data, mic_positions, azimuth_range, elevation_range, rate, c=343):
+    num_samples = signal_data.shape[0]
+    energy = np.zeros((len(azimuth_range), len(elevation_range)))
+    for az_idx, theta in enumerate(azimuth_range):
+        az_rad = np.radians(theta)
+        for el_idx, phi in enumerate(elevation_range):
+            el_rad = np.radians(phi)
+            direction = np.array([np.cos(el_rad)*np.cos(az_rad),
+                                  np.cos(el_rad)*np.sin(az_rad),
+                                  np.sin(el_rad)])
+            delays = np.dot(mic_positions, direction) / c
+            summed = np.zeros(num_samples)
+            for i, delay in enumerate(delays):
+                shift = int(np.round(delay * rate))
+                # Usamos np.roll para aplicar el desfase
+                summed += np.roll(signal_data[:, i], shift)
+            summed /= signal_data.shape[1]  # normalizamos
+            energy[az_idx, el_idx] = np.sum(summed**2)
+    return energy
 
-# Parámetros para el procesamiento en tiempo real
-CHUNK_DURATION_MS = 100  # Duración del chunk en milisegundos
-SAMPLES_PER_CHUNK = int(audioSamplingRate * CHUNK_DURATION_MS / 1000)  # Muestras por chunk
-BYTES_PER_SAMPLE = bits_per_sample // 8  # Bytes por muestra (2 bytes para 16 bits)
+# Función de filtrado (bandpass)
+def butter_bandpass(lowcut, highcut, rate, order=5):
+    nyquist = 0.5 * rate
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    b, a = butter(order, [low, high], btype='band')
+    return b, a
 
-def process_channel_data(channel_data, device_type, channel):
-    """
-    Función de ejemplo para procesar datos de un canal.
-    Aquí puedes implementar tu propio procesamiento.
-    """
-    samples = np.frombuffer(channel_data, dtype=np.int16)
-    print(f"Dispositivo {device_type}, Canal {channel}: Procesando chunk de {len(samples)} muestras")
-    max_amplitude = np.max(np.abs(samples))
-    print(f"Amplitud máxima: {max_amplitude}")
-    # Agrega aquí tu lógica de procesamiento (FFT, filtros, etc.)
+def apply_bandpass_filter(data, lowcut=400.0, highcut=18000.0, rate=RATE, order=5):
+    b, a = butter_bandpass(lowcut, highcut, rate, order=order)
+    return filtfilt(b, a, data, axis=0)
 
-def process_audio_realtime():
-    """
-    Función que procesa el audio en tiempo real leyendo de audioBuffers.
-    """
-    global doneReceivingAudio
-    print("Iniciando procesamiento de audio en tiempo real...")
+def process_audio_from_queue():
+    # Define beamforming parameters
+    azimuth_range = np.arange(-180, 181, 5)
+    elevation_range = np.arange(0, 91, 5)
+    # Example: a circular array of 8 microphones with a radius of 0.3 m
+    radius = 0.3
+    angles = np.linspace(0, 360, 8, endpoint=False)
+    mic_positions = np.array([[radius * np.cos(np.radians(a)),
+                               radius * np.sin(np.radians(a)),
+                               0] for a in angles])
 
-    while not all(doneReceivingAudio):  # Continúa hasta que todos los dispositivos terminen
-        for device_type in range(numberOfDevicesConnected):
-            with audioBufferLock[device_type]:
-                # Esperar a que haya datos en alguno de los buffers
-                if any(audioBufferStates[device_type]):
-                    buffer_index = audioBufferStates[device_type].index(True)
-                    data = audioBuffers[device_type][buffer_index][:audioBufferDataSizes[device_type][buffer_index]]
+    while True:
+        try:
+            # Get an audio chunk from the queue (blocking up to 1 second)
+            data = audio_processing_queue.get(timeout=1)
+        except queue.Empty:
+            continue
 
-                    # Convertir datos crudos a muestras
-                    samples = np.frombuffer(data, dtype=np.int16)
-                    sample_count = len(samples) // num_channels
-                    if sample_count == 0:
-                        continue
+        try:
+            # Convert the raw bytes to a NumPy array. Adjust dtype and channel count as needed.
+            samples = np.frombuffer(data, dtype=np.int16)
+            sample_count = len(samples) // 8  # assuming 8 channels
+            if sample_count == 0:
+                continue
+            samples = samples[:sample_count * 8].reshape((sample_count, 8))
+        except Exception as e:
+            print(f"Conversion error: {e}")
+            audio_processing_queue.task_done()
+            continue
 
-                    # Reorganizar en matriz (muestras, canales)
-                    samples = samples[:sample_count * num_channels].reshape((sample_count, num_channels))
+        # Apply bandpass filtering (adjust parameters as needed)
+        filtered = apply_bandpass_filter(samples, lowcut=400.0, highcut=18000.0, rate=RATE, order=5)
 
-                    # Procesar en chunks de 2 ms
-                    for start in range(0, sample_count, SAMPLES_PER_CHUNK):
-                        end = min(start + SAMPLES_PER_CHUNK, sample_count)
-                        chunk = samples[start:end]
+        # Apply beamforming (using delay-and-sum)
+        energy = beamform_time(filtered, mic_positions, azimuth_range, elevation_range, RATE, c=343)
 
-                        # Procesar cada canal independientemente
-                        for channel in range(num_channels):
-                            channel_data = chunk[:, channel].tobytes()
-                            process_channel_data(channel_data, device_type, channel)
+        # Estimate the direction by finding the maximum energy point
+        max_energy_idx = np.unravel_index(np.argmax(energy), energy.shape)
+        estimated_azimuth = azimuth_range[max_energy_idx[0]]
+        estimated_elevation = elevation_range[max_energy_idx[1]]
+        print(f"Estimated Direction: Azimuth {estimated_azimuth}°, Elevation {estimated_elevation}°")
 
-                    # Opcional: Marcar el buffer como procesado si no necesitas conservarlo
-                    # audioBufferStates[device_type][buffer_index] = False
-                    # audioBufferReady[device_type].notify_all()
+        audio_processing_queue.task_done()
 
-                # Breve pausa para no sobrecargar la CPU
-                audioBufferReady[device_type].wait(timeout=0.01)
 
 # ================================================================================================================#
 def main():
-    # ----------------------audio variables-------------------#
     global selectedMainMenuFunction, selectedRecordingMethodValue, selectedDataToRecordValue, selectedSDcardFunctionToPerformValue
     selectedMainMenuFunction, selectedRecordingMethodValue, selectedDataToRecordValue, selectedSDcardFunctionToPerformValue = mainMenu()
-    # Record data
+
+    # Start the real-time processing thread (daemon so it exits with the main program)
+    proc_thread = threading.Thread(target=process_audio_from_queue, daemon=True)
+    proc_thread.start()
+
+    # Based on the main menu selection, record data or access SD card.
     if selectedMainMenuFunction == "1":
-        if selectedRecordingMethodValue == "1":  # Ethernet
-            # Iniciar procesamiento en tiempo real en un hilo
-            process_thread = threading.Thread(target=process_audio_realtime)
-            process_thread.daemon = True  # Termina cuando el programa principal termina
-            process_thread.start()
-            # Ejecutar la grabación
-            recordData(selectedRecordingMethodValue, selectedDataToRecordValue)
-            # Esperar a que termine la grabación (opcional)
-            process_thread.join()
-        else:
-            # Mantener el comportamiento original para otras opciones
-            recordData(selectedRecordingMethodValue, selectedDataToRecordValue)
-
-    # Access SD card
+        recordData(selectedRecordingMethodValue, selectedDataToRecordValue)
     elif selectedMainMenuFunction == "2":
-        accessSDcard(masterDeviceEthernet, slaveDeviceEthernet, slaveDeviceEthernetDeviceNumber2, DEVICE_0_ETHERNET_IP,
-                     DEVICE_1_ETHERNET_IP, DEVICE_2_ETHERNET_IP, selectedSDcardFunctionToPerformValue)
-        # accessSDcard(masterDeviceEthernet,slaveDeviceEthernet,DEVICE_0_ETHERNET_IP,DEVICE_1_ETHERNET_IP,placeHolder,timeOfAccessingSDcard,selectedSDcardFunctionToPerformValue)
-        # generateJson(masterDeviceNetworkForSDaccess,slaveDeviceNetworkForSDaccess,masterDeviceIPForSDaccess,slaveDeviceIPForSDaccess,placeHolder,timeOfAccessingSDcard)
+        accessSDcard(masterDeviceEthernet, slaveDeviceEthernet, slaveDeviceEthernetDeviceNumber2,
+                     DEVICE_0_ETHERNET_IP, DEVICE_1_ETHERNET_IP, DEVICE_2_ETHERNET_IP,
+                     selectedSDcardFunctionToPerformValue)
 
 
-# Call main() when the script is run
 if __name__ == "__main__":
     main()
