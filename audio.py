@@ -5,10 +5,41 @@ import threading
 import csv
 import struct
 import time
+
+###################################
+
+import socketserver
 import queue
+import subprocess
 
+# Create a global queue for raw audio data
+audio_data_queue = queue.Queue()
 
+# Define a request handler that sends data from the queue to connected clients
+class AudioDataHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        # This will run for each connected client.
+        while True:
+            try:
+                # Get data from the queue; adjust timeout if needed
+                data = audio_data_queue.get(timeout=1)
+                if data is None:  # Use None as a signal to close connection
+                    break
+                self.request.sendall(data)
+            except queue.Empty:
+                continue
 
+# Start the TCP server in a background thread
+def start_audio_server(host='localhost', port=5001):
+    server = socketserver.ThreadingTCPServer((host, port), AudioDataHandler)
+    server.daemon_threads = True  # so it exits with the main program
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    print(f"Audio server started on {host}:{port}")
+
+# Start the server early in your code (for example, near the beginning of main())
+start_audio_server()
+
+#########################
 
 fileNumberFromPythonScript = 0  # init
 placeHolder = 1
@@ -33,7 +64,7 @@ audioSamplingRate = 48000
 """ @brief Set each audio record duration in seconds
     @note Can be any value, as long as its a positive integer
 """
-RECORDING_DURATION = 1800
+RECORDING_DURATION = 3600
 
 """ @brief Set number of files to record consecutively
     @note Can be any value, as long as its a positive integer
@@ -145,7 +176,6 @@ DEVICE_2_PORT = 80  # Slave Device Port
 
 # Define the buffer size for receiving data
 AUDIO_BUFFER_SIZE = 32768  # 102400  # Increased buffer size 32768
-#AUDIO_BUFFER_SIZE = 76800
 
 masterDeviceEthernet = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Master device web socket
 
@@ -226,6 +256,13 @@ def receiveAudioData(sock, deviceType):
                 audioBuffers[deviceType][audioBufferIndex][: len(data)] = data
                 audioBufferDataSizes[deviceType][audioBufferIndex] = len(data)
                 audioBufferStates[deviceType][audioBufferIndex] = True
+
+####################################
+
+                # Also publish the raw data for processing
+                audio_data_queue.put(data)
+
+####################################
 
                 # Update the total samples received
                 samples_received = len(data) * 8 // (num_channels * bits_per_sample)
@@ -2275,68 +2312,6 @@ def generateJson(masterDeviceNetworkForJson, slaveDeviceNetworkForJson, slaveDev
     return json_data
 
 
-##############################################################################################################
-import numpy as np
-
-
-
-# Parámetros para el procesamiento en tiempo real
-CHUNK_DURATION_MS = 100  # Duración del chunk en milisegundos
-SAMPLES_PER_CHUNK = int(audioSamplingRate * CHUNK_DURATION_MS / 1000)  # Muestras por chunk
-BYTES_PER_SAMPLE = bits_per_sample // 8  # Bytes por muestra (2 bytes para 16 bits)
-
-def process_channel_data(channel_data, device_type, channel):
-    """
-    Función de ejemplo para procesar datos de un canal.
-    Aquí puedes implementar tu propio procesamiento.
-    """
-    samples = np.frombuffer(channel_data, dtype=np.int16)
-    print(f"Dispositivo {device_type}, Canal {channel}: Procesando chunk de {len(samples)} muestras")
-    max_amplitude = np.max(np.abs(samples))
-    print(f"Amplitud máxima: {max_amplitude}")
-    # Agrega aquí tu lógica de procesamiento (FFT, filtros, etc.)
-
-def process_audio_realtime():
-    """
-    Función que procesa el audio en tiempo real leyendo de audioBuffers.
-    """
-    global doneReceivingAudio
-    print("Iniciando procesamiento de audio en tiempo real...")
-
-    while not all(doneReceivingAudio):  # Continúa hasta que todos los dispositivos terminen
-        for device_type in range(numberOfDevicesConnected):
-            with audioBufferLock[device_type]:
-                # Esperar a que haya datos en alguno de los buffers
-                if any(audioBufferStates[device_type]):
-                    buffer_index = audioBufferStates[device_type].index(True)
-                    data = audioBuffers[device_type][buffer_index][:audioBufferDataSizes[device_type][buffer_index]]
-
-                    # Convertir datos crudos a muestras
-                    samples = np.frombuffer(data, dtype=np.int16)
-                    sample_count = len(samples) // num_channels
-                    if sample_count == 0:
-                        continue
-
-                    # Reorganizar en matriz (muestras, canales)
-                    samples = samples[:sample_count * num_channels].reshape((sample_count, num_channels))
-
-                    # Procesar en chunks de 2 ms
-                    for start in range(0, sample_count, SAMPLES_PER_CHUNK):
-                        end = min(start + SAMPLES_PER_CHUNK, sample_count)
-                        chunk = samples[start:end]
-
-                        # Procesar cada canal independientemente
-                        for channel in range(num_channels):
-                            channel_data = chunk[:, channel].tobytes()
-                            process_channel_data(channel_data, device_type, channel)
-
-                    # Opcional: Marcar el buffer como procesado si no necesitas conservarlo
-                    # audioBufferStates[device_type][buffer_index] = False
-                    # audioBufferReady[device_type].notify_all()
-
-                # Breve pausa para no sobrecargar la CPU
-                audioBufferReady[device_type].wait(timeout=0.01)
-
 # ================================================================================================================#
 def main():
     # ----------------------audio variables-------------------#
@@ -2344,19 +2319,7 @@ def main():
     selectedMainMenuFunction, selectedRecordingMethodValue, selectedDataToRecordValue, selectedSDcardFunctionToPerformValue = mainMenu()
     # Record data
     if selectedMainMenuFunction == "1":
-        if selectedRecordingMethodValue == "1":  # Ethernet
-            # Iniciar procesamiento en tiempo real en un hilo
-            process_thread = threading.Thread(target=process_audio_realtime)
-            process_thread.daemon = True  # Termina cuando el programa principal termina
-            process_thread.start()
-            # Ejecutar la grabación
-            recordData(selectedRecordingMethodValue, selectedDataToRecordValue)
-            # Esperar a que termine la grabación (opcional)
-            process_thread.join()
-        else:
-            # Mantener el comportamiento original para otras opciones
-            recordData(selectedRecordingMethodValue, selectedDataToRecordValue)
-
+        recordData(selectedRecordingMethodValue, selectedDataToRecordValue)
     # Access SD card
     elif selectedMainMenuFunction == "2":
         accessSDcard(masterDeviceEthernet, slaveDeviceEthernet, slaveDeviceEthernetDeviceNumber2, DEVICE_0_ETHERNET_IP,
@@ -2368,3 +2331,4 @@ def main():
 # Call main() when the script is run
 if __name__ == "__main__":
     main()
+
