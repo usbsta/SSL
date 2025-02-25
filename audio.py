@@ -6,7 +6,7 @@ import csv
 import struct
 import time
 
-###################################
+#########################################################################
 
 import socketserver
 import queue
@@ -39,7 +39,7 @@ def start_audio_server(host='localhost', port=5001):
 # Start the server early in your code (for example, near the beginning of main())
 start_audio_server()
 
-#########################
+#########################################################################
 
 fileNumberFromPythonScript = 0  # init
 placeHolder = 1

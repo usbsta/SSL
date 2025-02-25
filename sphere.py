@@ -10,7 +10,7 @@ import time
 RATE = 48000  # Sampling rate in Hz
 CHUNK = int(0.1 * RATE)  # 100 ms per chunk
 CHANNELS = 8  # 8 microphones
-BYTES_PER_SAMPLE = 4  # 32-bit integer = 4 bytes
+BYTES_PER_SAMPLE = 2  # 32-bit integer = 4 bytes
 BYTES_PER_CHUNK = CHUNK * CHANNELS * BYTES_PER_SAMPLE
 
 # ----------------------------
@@ -21,7 +21,7 @@ HIGHCUT = 18000.0  # Upper cutoff frequency in Hz
 FILTER_ORDER = 5  # Order of the Butterworth filter
 
 
-"""
+
 # Define a circular microphone array with 8 microphones placed on a circle of radius 0.1 m at z=0
 num_mics = CHANNELS
 radius = 0.1
@@ -31,38 +31,7 @@ for i in range(num_mics):
     mic_positions[i, 0] = radius * np.cos(angles[i])  # x-coordinate
     mic_positions[i, 1] = radius * np.sin(angles[i])  # y-coordinate
     mic_positions[i, 2] = 0  # z-coordinate
-"""
 
-# ----------------------------
-# Original Microphone Geometry
-# ----------------------------
-# Provided arrays (using "config 2 augmented")
-a = [0, -120, -240]  # Angles in degrees
-# a2 is not used here as we only want 8 microphones
-h = [1.12, 1.02, 0.87, 0.68, 0.47, 0.02]
-r = [0.1, 0.16, 0.23, 0.29, 0.43, 0.63]
-
-# Build the mic positions exactly as in your original code but only take the first 8 positions.
-# The original positions (for 18 mics) are defined in blocks;
-# here we select:
-#   Mic 1: [r[0]*cos(0°),    r[0]*sin(0°),    h[0]]
-#   Mic 2: [r[0]*cos(-120°), r[0]*sin(-120°), h[0]]
-#   Mic 3: [r[0]*cos(-240°), r[0]*sin(-240°), h[0]]
-#   Mic 4: [r[1]*cos(0°),    r[1]*sin(0°),    h[1]]
-#   Mic 5: [r[1]*cos(-120°), r[1]*sin(-120°), h[1]]
-#   Mic 6: [r[1]*cos(-240°), r[1]*sin(-240°), h[1]]
-#   Mic 7: [r[2]*cos(0°),    r[2]*sin(0°),    h[2]]
-#   Mic 8: [r[2]*cos(-120°), r[2]*sin(-120°), h[2]]
-mic_positions = np.array([
-    [r[0] * np.cos(np.radians(a[0])), r[0] * np.sin(np.radians(a[0])), h[0]],
-    [r[0] * np.cos(np.radians(a[1])), r[0] * np.sin(np.radians(a[1])), h[0]],
-    [r[0] * np.cos(np.radians(a[2])), r[0] * np.sin(np.radians(a[2])), h[0]],
-    [r[1] * np.cos(np.radians(a[0])), r[1] * np.sin(np.radians(a[0])), h[1]],
-    [r[1] * np.cos(np.radians(a[1])), r[1] * np.sin(np.radians(a[1])), h[1]],
-    [r[1] * np.cos(np.radians(a[2])), r[1] * np.sin(np.radians(a[2])), h[1]],
-    [r[2] * np.cos(np.radians(a[0])), r[2] * np.sin(np.radians(a[0])), h[2]],
-    [r[2] * np.cos(np.radians(a[1])), r[2] * np.sin(np.radians(a[1])), h[2]]
-])
 
 # Speed of sound in air (m/s)
 c = 343
@@ -119,6 +88,8 @@ def beamform_time(signal_data, mic_positions, az_range, el_range, fs, c):
             # Compute delays for each mic (in seconds)
             delays = np.dot(mic_positions, direction) / c
             combined = np.zeros(num_samples)
+
+
             # Apply circular shift to each channel by the appropriate delay (in samples)
             for mic in range(signal_data.shape[1]):
                 delay_samples = int(np.round(delays[mic] * fs))
@@ -126,12 +97,14 @@ def beamform_time(signal_data, mic_positions, az_range, el_range, fs, c):
             # Normalize by number of microphones and compute energy
             combined /= signal_data.shape[1]
             energy[i, j] = np.sum(combined ** 2)
+
+
     return energy
 
 
 # Define beamforming grid
-azimuth_range = np.arange(-180, 181, 5)  # -180° to 180° in 5° steps
-elevation_range = np.arange(0, 91, 5)  # 0° to 90° in 5° steps
+azimuth_range = np.arange(-180, 181, 4)  # -180° to 180° in 4° steps
+elevation_range = np.arange(0, 91, 2)  # 0° to 90° in 2° steps
 
 # ----------------------------
 # Socket Setup to Receive Audio Data
@@ -148,11 +121,11 @@ print(f"Connected to audio server at {IP}:{PORT}")
 # Real-Time Processing and Visualization
 # ----------------------------
 plt.ion()
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, ax = plt.subplots(figsize=(12, 3))
 heatmap = ax.imshow(np.zeros((len(azimuth_range), len(elevation_range))).T,
                     extent=[azimuth_range[0], azimuth_range[-1],
                             elevation_range[0], elevation_range[-1]],
-                    origin='lower', aspect='auto', cmap='viridis')
+                    origin='lower', aspect='auto', cmap='inferno')
 fig.colorbar(heatmap, ax=ax, label='Energy')
 ax.set_xlabel('Azimuth (degrees)')
 ax.set_ylabel('Elevation (degrees)')
