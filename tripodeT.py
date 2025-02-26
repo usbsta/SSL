@@ -99,6 +99,7 @@ try:
             for j in range(len(elevation_range)):
                 # Use precomputed delay samples for current (azimuth, elevation) pair
                 beamformed_signal = apply_beamforming(filtered_chunk, precomputed_delays[i, j, :])
+                #beamformed_signal = apply_beamforming(audio_chunk, precomputed_delays[i, j, :])
                 energy_map[i, j] = np.sum(beamformed_signal ** 2)
 
         # ---------------------------------------------------

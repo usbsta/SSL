@@ -24,20 +24,22 @@ FILTER_ORDER = 5                # Order of the Butterworth filter
 # Original (Tripod) Microphone Geometry
 # ----------------------------
 # Provided arrays (using "config 2 augmented")
-a = [0, -120, -240]  # Angles in degrees (note: -240° is equivalent to 120°)
-h = [1.12, 1.02, 0.87, 0.68, 0.47, 0.02]
-r = [0.1, 0.16, 0.23, 0.29, 0.43, 0.63]
+a = [0, -60, -180, -300]
 
-# Maintain the same notation for mic_positions
+# progressive distance configuration
+h = [0.45, 0.25, 0.11]
+r = [0.07, 0.02, 0.18]
+
+# Define microphone positions
 mic_positions = np.array([
-    [r[0] * np.cos(np.radians(a[0])), r[0] * np.sin(np.radians(a[0])), h[0]],
-    [r[0] * np.cos(np.radians(a[1])), r[0] * np.sin(np.radians(a[1])), h[0]],
-    [r[0] * np.cos(np.radians(a[2])), r[0] * np.sin(np.radians(a[2])), h[0]],
-    [r[1] * np.cos(np.radians(a[0])), r[1] * np.sin(np.radians(a[0])), h[1]],
-    [r[1] * np.cos(np.radians(a[1])), r[1] * np.sin(np.radians(a[1])), h[1]],
-    [r[1] * np.cos(np.radians(a[2])), r[1] * np.sin(np.radians(a[2])), h[1]],
-    [r[2] * np.cos(np.radians(a[0])), r[2] * np.sin(np.radians(a[0])), h[2]],
-    [r[2] * np.cos(np.radians(a[1])), r[2] * np.sin(np.radians(a[1])), h[2]]
+    [r[0] * np.cos(np.radians(a[0])), r[0] * np.sin(np.radians(a[0])), h[0]],  # mic 1
+    [r[1] * np.cos(np.radians(a[2])), r[1] * np.sin(np.radians(a[2])), h[1]],  # mic 2
+    [r[0] * np.cos(np.radians(a[1])), r[0] * np.sin(np.radians(a[1])), h[0]],  # mic 3
+    [r[2] * np.cos(np.radians(a[1])), r[2] * np.sin(np.radians(a[1])), h[2]],  # mic 4
+    [r[0] * np.cos(np.radians(a[2])), r[0] * np.sin(np.radians(a[2])), h[0]],  # mic 5
+    [r[2] * np.cos(np.radians(a[2])), r[2] * np.sin(np.radians(a[2])), h[2]],  # mic 6
+    [r[0] * np.cos(np.radians(a[3])), r[0] * np.sin(np.radians(a[3])), h[0]],  # mic 7
+    [r[2] * np.cos(np.radians(a[3])), r[2] * np.sin(np.radians(a[3])), h[2]]   # mic 8
 ])
 
 # Speed of sound in air (m/s)
@@ -152,6 +154,7 @@ try:
 
         # Compute the beamforming energy map using the filtered data
         energy_map = beamform_time(filtered_chunk, mic_positions, azimuth_range, elevation_range, RATE, c)
+        #energy_map = beamform_time(audio_chunk, mic_positions, azimuth_range, elevation_range, RATE, c)
 
         # Update the heatmap display
         heatmap.set_data(energy_map.T)
