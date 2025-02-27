@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Import beamforming-related functions from your external module.
 # These functions must be defined in your "functions.py" file.
-from functions import (
+from Pruebas.functions import (
     initialize_microphone_positions,
     calculate_delays_for_direction,
     apply_bandpass_filter,

@@ -6,12 +6,10 @@ import time
 # ---------------------------------------------------
 # Import functions from the external module 'functions.py'
 # ---------------------------------------------------
-from functions import (
+from Pruebas.functions import (
     initialize_microphone_positions,
     calculate_delays_for_direction,
-    shift_signal_beamforming,
     apply_beamforming,
-    butter_bandpass,
     apply_bandpass_filter
 )
 
