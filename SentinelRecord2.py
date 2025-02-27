@@ -9,6 +9,7 @@ import time
 ##############################################
 import numpy as np
 import matplotlib.pyplot as plt
+global fig, ax, heatmap
 
 # ---------------------------------------------------
 # Import functions from the external module 'functions.py'
@@ -277,67 +278,51 @@ def receiveAudioData(sock, deviceType):
                 # ---------------------------------------------------
                 # Real-Time Processing and Visualization
                 # ---------------------------------------------------
-                plt.ion()
-                fig, ax = plt.subplots(figsize=(12, 3))
-                heatmap = ax.imshow(np.zeros((len(azimuth_range), len(elevation_range))).T,
-                                    extent=[azimuth_range[0], azimuth_range[-1],
-                                            elevation_range[0], elevation_range[-1]],
-                                    origin='lower', aspect='auto', cmap='jet')
-                fig.colorbar(heatmap, ax=ax, label='Energy')
-                ax.set_xlabel('Azimuth (degrees)')
-                ax.set_ylabel('Elevation (degrees)')
-                ax.set_title('Real-time Beamforming Energy Map')
-
                 try:
-                    #while True:
-                        # ---------------------------------------------------
-                        # Receive data until a full chunk is obtained
-                        # ---------------------------------------------------
-                        chunk_data = b''
-                        # data = sock.recv(AUDIO_BUFFER_SIZE)
-                        while len(chunk_data) < BYTES_PER_CHUNK:
-                            packet = sock.recv(BYTES_PER_CHUNK - len(chunk_data))
-                            if not packet:
-                                break
-                            chunk_data += packet
+                    fig  # Will raise NameError if fig is not defined
+                except NameError:
+                    plt.ion()
+                    fig, ax = plt.subplots(figsize=(12, 3))
+                    heatmap = ax.imshow(np.zeros((len(azimuth_range), len(elevation_range))).T,
+                                        extent=[azimuth_range[0], azimuth_range[-1],
+                                                elevation_range[0], elevation_range[-1]],
+                                        origin='lower', aspect='auto', cmap='jet')
+                    fig.colorbar(heatmap, ax=ax, label='Energy')
+                    ax.set_xlabel('Azimuth (degrees)')
+                    ax.set_ylabel('Elevation (degrees)')
+                    ax.set_title('Real-time Beamforming Energy Map')
 
-                        if len(chunk_data) != BYTES_PER_CHUNK:
-                            print("Incomplete chunk received, exiting...")
+                # Inside your processing block (which now processes only one chunk)
+                try:
+                    # Process one chunk of data
+                    chunk_data = b''
+                    while len(chunk_data) < BYTES_PER_CHUNK:
+                        packet = sock.recv(BYTES_PER_CHUNK - len(chunk_data))
+                        if not packet:
                             break
+                        chunk_data += packet
 
+                    if len(chunk_data) != BYTES_PER_CHUNK:
+                        print("Incomplete chunk received, exiting processing block...")
+                    else:
                         # Convert binary data to NumPy array and reshape to (CHUNK, CHANNELS)
                         audio_chunk = np.frombuffer(chunk_data, dtype=np.int16).reshape((-1, CHANNELS))
-
-                        # ---------------------------------------------------
-                        # Apply bandpass filter on each channel using the imported function
-                        # ---------------------------------------------------
+                        # Apply bandpass filter
                         filtered_chunk = apply_bandpass_filter(audio_chunk, LOWCUT, HIGHCUT, RATE, order=FILTER_ORDER)
-
-                        # ---------------------------------------------------
-                        # Compute the beamforming energy map using precomputed delays
-                        # ---------------------------------------------------
+                        # Compute beamforming energy map
                         energy_map = np.zeros((len(azimuth_range), len(elevation_range)))
                         for i in range(len(azimuth_range)):
                             for j in range(len(elevation_range)):
-                                # Use precomputed delay samples for current (azimuth, elevation) pair
                                 beamformed_signal = apply_beamforming(filtered_chunk, precomputed_delays[i, j, :])
-                                # beamformed_signal = apply_beamforming(audio_chunk, precomputed_delays[i, j, :])
                                 energy_map[i, j] = np.sum(beamformed_signal ** 2)
-
-                        # ---------------------------------------------------
-                        # Update the heatmap display
-                        # ---------------------------------------------------
+                        # Update the existing heatmap instead of creating a new plot
                         heatmap.set_data(energy_map.T)
                         heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))
                         fig.canvas.draw()
                         fig.canvas.flush_events()
-
-                        # Optional delay to control update rate
                         time.sleep(0.01)
-
                 except KeyboardInterrupt:
                     print("Processing interrupted by user.")
-
 #######################################################################################################
 
                 # Update the total samples received
