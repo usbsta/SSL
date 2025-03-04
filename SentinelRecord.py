@@ -36,7 +36,7 @@ BYTES_PER_CHUNK = CHUNK * CHANNELS * BYTES_PER_SAMPLE
 
 # Bandpass filter parameters
 LOWCUT = 400.0  # Lower cutoff frequency in Hz
-HIGHCUT = 18000.0  # Upper cutoff frequency in Hz
+HIGHCUT = 3000.0  # Upper cutoff frequency in Hz
 FILTER_ORDER = 5  # Filter order for Butterworth
 
 c = 343  # Speed of sound in air (m/s)
@@ -72,7 +72,7 @@ audioSamplingRate = 48000
 """ @brief Set each audio record duration in seconds
     @note Can be any value, as long as its a positive integer
 """
-RECORDING_DURATION = 60
+RECORDING_DURATION = 10
 
 """ @brief Set number of files to record consecutively
     @note Can be any value, as long as its a positive integer
@@ -289,7 +289,7 @@ def receiveAudioData(sock, deviceType):
                 ax.set_title('Real-time Beamforming Energy Map')
 
                 try:
-                    #while True:
+                    while True:
                         # ---------------------------------------------------
                         # Receive data until a full chunk is obtained
                         # ---------------------------------------------------

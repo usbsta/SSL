@@ -28,7 +28,7 @@ audioSamplingRate = 48000
 """ @brief Set each audio record duration in seconds
     @note Can be any value, as long as its a positive integer
 """
-RECORDING_DURATION = 3600
+RECORDING_DURATION = 600
 
 """ @brief Set number of files to record consecutively
     @note Can be any value, as long as its a positive integer
