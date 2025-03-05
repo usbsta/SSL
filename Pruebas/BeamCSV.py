@@ -6,7 +6,7 @@ import time
 from pyproj import Transformer
 
 # Import new beamforming functions from Pruebas.functions
-from Pruebas.functions import (
+from Utilities.functions import (
     initialize_microphone_positions,
     calculate_delays_for_direction,
     apply_beamforming,
@@ -14,7 +14,7 @@ from Pruebas.functions import (
 )
 
 # Import geo utilities (assumed to be the same as in the original implementation)
-from geo_utils import (
+from Utilities.geo_utils import (
     wrap_angle, calculate_angle_difference, calculate_azimuth_meters,
     calculate_elevation_meters, calculate_total_distance_meters
 )

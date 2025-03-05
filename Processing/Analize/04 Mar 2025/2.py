@@ -5,60 +5,57 @@ import wave
 import time
 from pyproj import Transformer
 
-# Import new beamforming functions from Pruebas.functions
-from Pruebas.functions import (
+from Utilities.functions import (
     initialize_microphone_positions,
     calculate_delays_for_direction,
     apply_beamforming,
     apply_bandpass_filter
 )
+from Utilities import control
 
-# Import geo utilities (assumed to be the same as in the original implementation)
 from geo_utils import (
     wrap_angle, calculate_angle_difference, calculate_azimuth_meters,
     calculate_elevation_meters, calculate_total_distance_meters
 )
 
+pantilt = control.Pantilt("COM4")
 # ----------------------- GENERAL CONFIGURATIONS -----------------------
-RECORD_SECONDS = 120000
-RATE = 48000  # Sampling rate in Hz
+RECORD_SECONDS = 600
+RATE = 48000
 CHUNK = int(0.1 * RATE)  # Chunk duration (100 ms)
-LOWCUT = 400.0  # Lower cutoff frequency in Hz
-HIGHCUT = 3000.0  # Upper cutoff frequency in Hz
-FILTER_ORDER = 5  # Filter order for the Butterworth filter
-c = 343  # Speed of sound in air (m/s)
-skip_seconds = 3  # Seconds to skip at the beginning of the audio
+LOWCUT = 400.0
+HIGHCUT = 3000.0
+FILTER_ORDER = 5
+c = 343
+skip_seconds = 5.4  # Seconds to skip at the beginning of the audio
 
-# Define beamforming grid for azimuth and elevation angles
-azimuth_range = np.arange(-180, 181, 4)  # Azimuth from -180° to 180° in 4° steps
-elevation_range = np.arange(0, 91, 4)      # Elevation from 0° to 90° in 4° steps
+azimuth_range = np.arange(-180, 181, 4)
+elevation_range = np.arange(0, 91, 4)
 
-# Initialize microphone positions and compute the number of channels
 mic_positions = initialize_microphone_positions()
 CHANNELS = mic_positions.shape[0]
 
-# Precompute delay samples for each (azimuth, elevation) pair
 precomputed_delays = np.empty((len(azimuth_range), len(elevation_range), CHANNELS), dtype=np.int32)
 for i, az in enumerate(azimuth_range):
     for j, el in enumerate(elevation_range):
         precomputed_delays[i, j, :] = calculate_delays_for_direction(mic_positions, az, el, RATE, c)
 
 # WAV filename (single file with eight channels)
-wav_filename = '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/20250303_133939_File0_Master_device.wav'
+wav_filename = '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/2/20250303_140608_File0_Master_device.wav'
 
 # Drone configuration and CSV file paths
 drones_config = [
     {
         'name': 'DJI Inspire 1_1',
         'ref_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/Ref/Mar-3rd-2025-01-35PM-Flight-Airdata.csv',
-        'flight_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/Mar-3rd-2025-01-39PM-Flight-Airdata2.csv',
+        'flight_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/2/Mar-3rd-2025-02-06PM-Flight-Airdata2.csv',
         'latitude_col': 'latitude',
         'longitude_col': 'longitude',
         'altitude_col': 'altitude_above_seaLevel(feet)',
         'time_col': 'time(millisecond)',
-        'initial_azimuth': 16.0,
-        'initial_elevation': 6.0,
-        'start_index': 23, #33
+        'initial_azimuth': 6.0,
+        'initial_elevation': 2.0,
+        'start_index': 30,
     }
 ]
 
@@ -188,6 +185,10 @@ def process_drone_data(drone_config):
         max_idx = np.unravel_index(np.argmax(energy_map), energy_map.shape)
         estimated_azimuth = azimuth_range[max_idx[0]]
         estimated_elevation = elevation_range[max_idx[1]]
+
+        pantilt.set(pan_degrees=-estimated_azimuth, tilt_degrees=-estimated_elevation)
+        #time.sleep(1)
+
         current_time_audio = time_idx * (CHUNK / RATE) + skip_seconds
 
         # Retrieve corresponding CSV flight data
