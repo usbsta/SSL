@@ -2365,7 +2365,7 @@ def process_audio_realtime():
             max_idx = np.unravel_index(np.argmax(energy_map), energy_map.shape)
             estimated_azimuth = azimuth_range[max_idx[0]]
             estimated_elevation = elevation_range[max_idx[1]]
-            pantilt.set(pan_degrees=-estimated_azimuth, tilt_degrees=-estimated_elevation)
+            pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
             # Update the plot.
             heatmap.set_data(energy_map.T)
             heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))

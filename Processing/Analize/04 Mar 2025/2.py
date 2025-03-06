@@ -186,7 +186,7 @@ def process_drone_data(drone_config):
         estimated_azimuth = azimuth_range[max_idx[0]]
         estimated_elevation = elevation_range[max_idx[1]]
 
-        pantilt.set(pan_degrees=-estimated_azimuth, tilt_degrees=-estimated_elevation)
+        pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
         #time.sleep(1)
 
         current_time_audio = time_idx * (CHUNK / RATE) + skip_seconds
