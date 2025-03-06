@@ -4,7 +4,7 @@ import wave
 import time
 
 # Import external beamforming functions
-from Pruebas.functions import (
+from Utilities.functions import (
     initialize_microphone_positions,
     calculate_delays_for_direction,
     apply_beamforming,
@@ -66,11 +66,18 @@ def process_audio_file(wav_filename):
     fig, ax = plt.subplots(figsize=(12, 3))
     heatmap = ax.imshow(np.zeros((len(azimuth_range), len(elevation_range))).T,
                         extent=[azimuth_range[0], azimuth_range[-1], elevation_range[0], elevation_range[-1]],
-                        origin='lower', aspect='auto', cmap='jet')
+                        origin='lower', aspect='auto', cmap='inferno')
     fig.colorbar(heatmap, ax=ax, label='Energy')
     ax.set_xlabel('Azimuth (degrees)')
     ax.set_ylabel('Elevation (degrees)')
     ax.set_title('Beamforming Energy Map (Simulated Real-time)')
+
+    # Marker for maximum energy and CSV trajectory line
+    max_energy_marker, = ax.plot([], [], 'ro', label='Max Energy')
+    plt.legend()
+    plt.grid(True)
+    fig.canvas.draw()
+    fig.canvas.flush_events()
 
     # Process the audio file chunk by chunk
     while True:
@@ -95,8 +102,13 @@ def process_audio_file(wav_filename):
                 energy_map[i, j] = np.sum(beamformed_signal ** 2)
 
         # Update the heatmap display
+        max_idx = np.unravel_index(np.argmax(energy_map), energy_map.shape)
+        estimated_azimuth = azimuth_range[max_idx[0]]
+        estimated_elevation = elevation_range[max_idx[1]]
+
         heatmap.set_data(energy_map.T)
         heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))
+        max_energy_marker.set_data([estimated_azimuth], [estimated_elevation])
         fig.canvas.draw()
         fig.canvas.flush_events()
 
