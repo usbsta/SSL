@@ -11,14 +11,15 @@ from Utilities.functions import (
     apply_beamforming,
     apply_bandpass_filter
 )
-from Utilities import control
+
+from Utilities import pantilt
 
 from geo_utils import (
     wrap_angle, calculate_angle_difference, calculate_azimuth_meters,
     calculate_elevation_meters, calculate_total_distance_meters
 )
 
-pantilt = control.Pantilt("COM4")
+pantilt = pantilt.Pantilt("COM4", window_size=30, slow_factor=0.2, threshold=1.0, initial_pan=10.0, initial_tilt=5.0)
 # ----------------------- GENERAL CONFIGURATIONS -----------------------
 RECORD_SECONDS = 600
 RATE = 48000
@@ -186,7 +187,9 @@ def process_drone_data(drone_config):
         estimated_azimuth = azimuth_range[max_idx[0]]
         estimated_elevation = elevation_range[max_idx[1]]
 
-        pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
+        #pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
+        pantilt.set_smoothed(estimated_azimuth, estimated_elevation)
+
         #time.sleep(1)
 
         current_time_audio = time_idx * (CHUNK / RATE) + skip_seconds
@@ -236,6 +239,8 @@ def process_drone_data(drone_config):
         csv_azimuths.append(csv_azimuth)
         csv_elevations.append(csv_elevation)
         line_csv.set_data(csv_azimuths, csv_elevations)
+
+
 
 
 

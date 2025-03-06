@@ -16,7 +16,7 @@ from Utilities.functions import (
     apply_bandpass_filter
 )
 
-from Utilities import control
+from Utilities import pantilt
 
 fileNumberFromPythonScript = 0  # init
 placeHolder = 1
@@ -2296,7 +2296,8 @@ def process_audio_realtime():
     computes an energy map, and updates an interactive plot.
     """
     # Define processing parameters.
-    pantilt = control.Pantilt("COM4")
+    pantilt = pantilt.Pantilt("COM4", window_size=30, slow_factor=0.2, threshold=1.0, initial_pan=10.0,
+                              initial_tilt=5.0)
     RATE = audioSamplingRate           # e.g., 48000 Hz (from your global config)
     CHUNK_FRAMES = int(0.1 * RATE)       # 100 ms worth of audio frames
     bytes_per_frame = num_channels * (bits_per_sample // 8)
