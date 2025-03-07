@@ -19,7 +19,7 @@ from geo_utils import (
     calculate_elevation_meters, calculate_total_distance_meters
 )
 
-pantilt = pantilt.Pantilt("COM4", window_size=30, slow_factor=0.2, threshold=1.0, initial_pan=10.0, initial_tilt=5.0)
+pantilt = pantilt.Pantilt("COM4", window_size=10, slow_factor=0.1, threshold=10.0, initial_pan=10.0, initial_tilt=5.0)
 # ----------------------- GENERAL CONFIGURATIONS -----------------------
 RECORD_SECONDS = 600
 RATE = 48000
@@ -29,6 +29,8 @@ HIGHCUT = 3000.0
 FILTER_ORDER = 5
 c = 343
 skip_seconds = 5.4  # Seconds to skip at the beginning of the audio
+skip_seconds = 450.4  # Seconds to skip at the beginning of the audio
+
 
 azimuth_range = np.arange(-180, 181, 4)
 elevation_range = np.arange(0, 91, 4)
@@ -188,7 +190,7 @@ def process_drone_data(drone_config):
         estimated_elevation = elevation_range[max_idx[1]]
 
         #pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
-        pantilt.set_smoothed(estimated_azimuth, estimated_elevation)
+        pantilt.set_smoothed2(estimated_azimuth, estimated_elevation)
 
         #time.sleep(1)
 

@@ -37,3 +37,5 @@ class Pantilt:
         msg += list(struct.pack("<H", tilt_val))
         self.serial.write(bytearray(msg))
         self.serial.flush()
+
+

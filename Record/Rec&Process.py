@@ -18,6 +18,9 @@ from Utilities.functions import (
 
 from Utilities import pantilt
 
+pantilt = pantilt.Pantilt("COM4", window_size=10, slow_factor=0.1, threshold=20.0, initial_pan=0.0,
+                              initial_tilt=0.0)
+
 fileNumberFromPythonScript = 0  # init
 placeHolder = 1
 """Number of Devices connected"""
@@ -41,7 +44,7 @@ audioSamplingRate = 48000
 """ @brief Set each audio record duration in seconds
     @note Can be any value, as long as its a positive integer
 """
-RECORDING_DURATION = 100
+RECORDING_DURATION = 600
 
 """ @brief Set number of files to record consecutively
     @note Can be any value, as long as its a positive integer
@@ -2296,18 +2299,17 @@ def process_audio_realtime():
     computes an energy map, and updates an interactive plot.
     """
     # Define processing parameters.
-    pantilt = pantilt.Pantilt("COM4", window_size=30, slow_factor=0.2, threshold=1.0, initial_pan=10.0,
-                              initial_tilt=5.0)
+
     RATE = audioSamplingRate           # e.g., 48000 Hz (from your global config)
-    CHUNK_FRAMES = int(0.1 * RATE)       # 100 ms worth of audio frames
+    CHUNK_FRAMES = int(0.5 * RATE)       # 100 ms worth of audio frames
     bytes_per_frame = num_channels * (bits_per_sample // 8)
     CHUNK_BYTES = CHUNK_FRAMES * bytes_per_frame
 
     # Set up microphone geometry and beamforming delays.
     mic_positions = initialize_microphone_positions()
     CHANNELS = mic_positions.shape[0]
-    azimuth_range = np.arange(-180, 181, 4)
-    elevation_range = np.arange(0, 91, 4)
+    azimuth_range = np.arange(-180, 181, 10)
+    elevation_range = np.arange(0, 91, 10)
     c = 343  # Speed of sound in air (m/s)
     precomputed_delays = np.empty((len(azimuth_range), len(elevation_range), CHANNELS), dtype=np.int32)
     for i, az in enumerate(azimuth_range):
@@ -2366,7 +2368,9 @@ def process_audio_realtime():
             max_idx = np.unravel_index(np.argmax(energy_map), energy_map.shape)
             estimated_azimuth = azimuth_range[max_idx[0]]
             estimated_elevation = elevation_range[max_idx[1]]
-            pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
+            pantilt.set_smoothed2(estimated_azimuth, estimated_elevation)
+            #pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
+
             # Update the plot.
             heatmap.set_data(energy_map.T)
             heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))
@@ -2377,7 +2381,6 @@ def process_audio_realtime():
 
     plt.ioff()
     plt.show()
-
 
 
 

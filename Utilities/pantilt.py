@@ -55,40 +55,68 @@ class Pantilt:
         self.serial.flush()
 
     def set_smoothed(self, pan_degrees: float, tilt_degrees: float):
-        # ---------------------------------------------------------
-        # Update the sliding window with the new estimated values
-        # ---------------------------------------------------------
+        # Append the new measurements to the sliding windows
         self.azimuth_window.append(pan_degrees)
         self.elevation_window.append(tilt_degrees)
         if len(self.azimuth_window) > self.window_size:
             self.azimuth_window.pop(0)
             self.elevation_window.pop(0)
 
-        # ---------------------------------------------------------
-        # Determine the target angles using the smoothing strategy
-        # ---------------------------------------------------------
         if len(self.azimuth_window) == self.window_size:
-            # Calculate the mean of the window for both angles
+            # Compute the average angles in the window
             mean_pan = np.mean(self.azimuth_window)
             mean_tilt = np.mean(self.elevation_window)
-            # Compute the Euclidean distance between the current estimate and the window mean
+            # Calculate the Euclidean distance from the new measurement to the window mean
             distance = np.sqrt((pan_degrees - mean_pan) ** 2 + (tilt_degrees - mean_tilt) ** 2)
+
             if distance < self.threshold:
                 # If within threshold, update immediately
                 target_pan = pan_degrees
                 target_tilt = tilt_degrees
             else:
-                # If outside threshold, update gradually using the slow_factor
-                target_pan = self.current_pan + self.slow_factor * (pan_degrees - self.current_pan)
-                target_tilt = self.current_tilt + self.slow_factor * (tilt_degrees - self.current_tilt)
+                # Use a dynamic slow factor based on the distance
+                # Clamp the factor between 0.05 and 0.2 inversely proportional to the distance
+                dynamic_factor = max(0.05, min(0.2, 1.0 / (distance + 0.001)))
+                target_pan = self.current_pan + dynamic_factor * (pan_degrees - self.current_pan)
+                target_tilt = self.current_tilt + dynamic_factor * (tilt_degrees - self.current_tilt)
         else:
-            # If the window is not full, update immediately
+            # Not enough data in the window: update immediately
             target_pan = pan_degrees
             target_tilt = tilt_degrees
 
-        # ---------------------------------------------------------
-        # Update the current state and send the command
-        # ---------------------------------------------------------
+        # Update the current state and send the new command to the hardware
         self.current_pan = target_pan
         self.current_tilt = target_tilt
         self.set(target_pan, target_tilt)
+
+    def set_smoothed2(self, pan_degrees: float, tilt_degrees: float):
+        # Append new measurements to the sliding windows
+        self.azimuth_window.append(pan_degrees)
+        self.elevation_window.append(tilt_degrees)
+        if len(self.azimuth_window) > self.window_size:
+            self.azimuth_window.pop(0)
+            self.elevation_window.pop(0)
+
+        # Check if the window is full to calculate the average
+        if len(self.azimuth_window) == self.window_size:
+            # Calculate the mean of the sliding window
+            mean_pan = np.mean(self.azimuth_window)
+            mean_tilt = np.mean(self.elevation_window)
+            # Calculate the Euclidean distance between the new measurement and the window average
+            distance = np.sqrt((pan_degrees - mean_pan) ** 2 + (tilt_degrees - mean_tilt) ** 2)
+
+            # Update the position only if the new measurement is within the threshold of the window average
+            if distance < self.threshold:
+                self.current_pan = pan_degrees
+                self.current_tilt = tilt_degrees
+            else:
+                # Do not update the current position if the measurement is outside the threshold
+                pass
+        else:
+            # If the window is not full, update immediately with the new measurement
+            self.current_pan = pan_degrees
+            self.current_tilt = tilt_degrees
+
+        # Send the command to update the hardware position
+        self.set(self.current_pan, self.current_tilt)
+
