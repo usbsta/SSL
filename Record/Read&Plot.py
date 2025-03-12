@@ -5,7 +5,7 @@ import time
 
 # Import external beamforming functions
 from Utilities.functions import (
-    initialize_microphone_positions,
+    microphone_positions_8_medium,
     calculate_delays_for_direction,
     apply_beamforming,
     apply_bandpass_filter
@@ -26,7 +26,7 @@ azimuth_range = np.arange(-180, 181, 4)  # Azimuth from -180° to 180° in 4° s
 elevation_range = np.arange(0, 91, 4)  # Elevation from 0° to 90° in 4° steps
 
 # Initialize microphone positions and determine the number of channels
-mic_positions = initialize_microphone_positions()
+mic_positions = microphone_positions_8_medium()
 CHANNELS = mic_positions.shape[0]  # Number of microphones based on geometry
 
 # Precompute delay samples for each (azimuth, elevation) pair

@@ -2361,7 +2361,7 @@ def process_audio_realtime():
             # Convert byte data to a NumPy array.
             audio_chunk = np.frombuffer(chunk_data, dtype=np.int16).reshape((-1, num_channels))
             # Apply bandpass filter (using your external function).
-            filtered_chunk = apply_bandpass_filter(audio_chunk, 400.0, 3000.0, RATE, order=5)
+            filtered_chunk = apply_bandpass_filter(audio_chunk, 200.0, 3000.0, RATE, order=5)
             # Compute the energy map for beamforming.
             energy_map = np.zeros((len(azimuth_range), len(elevation_range)))
             for i in range(len(azimuth_range)):
