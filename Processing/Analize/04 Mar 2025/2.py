@@ -29,7 +29,7 @@ HIGHCUT = 3000.0
 FILTER_ORDER = 5
 c = 343
 skip_seconds = 5.4  # Seconds to skip at the beginning of the audio
-skip_seconds = 450.4  # Seconds to skip at the beginning of the audio
+#skip_seconds = 450.4  # Seconds to skip at the beginning of the audio
 
 
 azimuth_range = np.arange(-180, 181, 4)

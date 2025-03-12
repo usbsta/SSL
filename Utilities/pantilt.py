@@ -76,9 +76,10 @@ class Pantilt:
             else:
                 # Use a dynamic slow factor based on the distance
                 # Clamp the factor between 0.05 and 0.2 inversely proportional to the distance
-                dynamic_factor = max(0.05, min(0.2, 1.0 / (distance + 0.001)))
-                target_pan = self.current_pan + dynamic_factor * (pan_degrees - self.current_pan)
-                target_tilt = self.current_tilt + dynamic_factor * (tilt_degrees - self.current_tilt)
+                #dynamic_factor = max(0.05, min(0.2, 1.0 / (distance + 0.001)))
+                #target_pan = self.current_pan + dynamic_factor * (pan_degrees - self.current_pan)
+                #target_tilt = self.current_tilt + dynamic_factor * (tilt_degrees - self.current_tilt)
+                pass
         else:
             # Not enough data in the window: update immediately
             target_pan = pan_degrees

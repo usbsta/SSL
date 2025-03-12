@@ -23,12 +23,12 @@ DEVICE_2_NUM = 2
     @param 96KHz   : 96000
     @param 192KHz  : 192000
 """
-audioSamplingRate = 48000
+audioSamplingRate = 96000
 
 """ @brief Set each audio record duration in seconds
     @note Can be any value, as long as its a positive integer
 """
-RECORDING_DURATION = 600
+RECORDING_DURATION = 10
 
 """ @brief Set number of files to record consecutively
     @note Can be any value, as long as its a positive integer

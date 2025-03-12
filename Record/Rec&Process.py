@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from Utilities.functions import (
-    initialize_microphone_positions,
+    microphone_positions_8_medium,
+    microphone_positions_8_small,
+    microphone_positions_4_ultra,
     calculate_delays_for_direction,
     apply_beamforming,
     apply_bandpass_filter
@@ -18,8 +20,8 @@ from Utilities.functions import (
 
 from Utilities import pantilt
 
-pantilt = pantilt.Pantilt("COM4", window_size=10, slow_factor=0.1, threshold=20.0, initial_pan=0.0,
-                              initial_tilt=0.0)
+#pantilt = pantilt.Pantilt("COM4", window_size=10, slow_factor=0.1, threshold=20.0, initial_pan=0.0,
+#                              initial_tilt=0.0)
 
 fileNumberFromPythonScript = 0  # init
 placeHolder = 1
@@ -2306,7 +2308,8 @@ def process_audio_realtime():
     CHUNK_BYTES = CHUNK_FRAMES * bytes_per_frame
 
     # Set up microphone geometry and beamforming delays.
-    mic_positions = initialize_microphone_positions()
+    mic_positions = microphone_positions_8_medium()
+    #mic_positions = microphone_positions_8_small()
     CHANNELS = mic_positions.shape[0]
     azimuth_range = np.arange(-180, 181, 10)
     elevation_range = np.arange(0, 91, 10)
@@ -2323,7 +2326,7 @@ def process_audio_realtime():
     heatmap = ax.imshow(energy_map_initial.T,
                         extent=[azimuth_range[0], azimuth_range[-1],
                                 elevation_range[0], elevation_range[-1]],
-                        origin='lower', aspect='auto', cmap='inferno')
+                        origin='lower', aspect='auto', cmap='jet')
     fig.colorbar(heatmap, ax=ax, label='Energy')
     ax.set_xlabel('Azimuth (degrees)')
     ax.set_ylabel('Elevation (degrees)')
@@ -2368,7 +2371,7 @@ def process_audio_realtime():
             max_idx = np.unravel_index(np.argmax(energy_map), energy_map.shape)
             estimated_azimuth = azimuth_range[max_idx[0]]
             estimated_elevation = elevation_range[max_idx[1]]
-            pantilt.set_smoothed2(estimated_azimuth, estimated_elevation)
+            #pantilt.set_smoothed(estimated_azimuth, estimated_elevation)
             #pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
 
             # Update the plot.
