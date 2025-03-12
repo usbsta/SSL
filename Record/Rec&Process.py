@@ -11,6 +11,7 @@ import numpy as np
 
 from Utilities.functions import (
     microphone_positions_8_medium,
+    microphone_positions_8_medium2,
     microphone_positions_8_small,
     microphone_positions_4_ultra,
     calculate_delays_for_direction,
@@ -20,8 +21,8 @@ from Utilities.functions import (
 
 from Utilities import pantilt
 
-#pantilt = pantilt.Pantilt("COM4", window_size=10, slow_factor=0.1, threshold=20.0, initial_pan=0.0,
-#                              initial_tilt=0.0)
+pantilt = pantilt.Pantilt("COM4", window_size=3, slow_factor=0.1, threshold=20.0, initial_pan=0.0,
+                              initial_tilt=0.0)
 
 fileNumberFromPythonScript = 0  # init
 placeHolder = 1
@@ -2303,12 +2304,12 @@ def process_audio_realtime():
     # Define processing parameters.
 
     RATE = audioSamplingRate           # e.g., 48000 Hz (from your global config)
-    CHUNK_FRAMES = int(0.5 * RATE)       # 100 ms worth of audio frames
+    CHUNK_FRAMES = int(0.3 * RATE)       # 100 ms worth of audio frames
     bytes_per_frame = num_channels * (bits_per_sample // 8)
     CHUNK_BYTES = CHUNK_FRAMES * bytes_per_frame
 
     # Set up microphone geometry and beamforming delays.
-    mic_positions = microphone_positions_8_medium()
+    mic_positions = microphone_positions_8_medium2()
     #mic_positions = microphone_positions_8_small()
     CHANNELS = mic_positions.shape[0]
     azimuth_range = np.arange(-180, 181, 10)
@@ -2371,10 +2372,12 @@ def process_audio_realtime():
             max_idx = np.unravel_index(np.argmax(energy_map), energy_map.shape)
             estimated_azimuth = azimuth_range[max_idx[0]]
             estimated_elevation = elevation_range[max_idx[1]]
-            #pantilt.set_smoothed(estimated_azimuth, estimated_elevation)
+            pantilt.set_smoothed2(estimated_azimuth, estimated_elevation)
             #pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
 
             # Update the plot.
+            #print(f"SSL: Azim = {estimated_azimuth:.2f}°, Elev = {estimated_elevation:.2f}° ")
+
             heatmap.set_data(energy_map.T)
             heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))
             max_energy_marker.set_data([estimated_azimuth], [estimated_elevation])
