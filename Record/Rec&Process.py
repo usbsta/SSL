@@ -21,7 +21,7 @@ from Utilities.functions import (
 
 from Utilities import pantilt
 
-pantilt = pantilt.Pantilt("COM4", window_size=3, slow_factor=0.1, threshold=20.0, initial_pan=0.0,
+pantilt = pantilt.Pantilt("COM4", window_size=5, slow_factor=0.1, threshold=20.0, initial_pan=0.0,
                               initial_tilt=0.0)
 
 fileNumberFromPythonScript = 0  # init
@@ -47,7 +47,7 @@ audioSamplingRate = 48000
 """ @brief Set each audio record duration in seconds
     @note Can be any value, as long as its a positive integer
 """
-RECORDING_DURATION = 600
+RECORDING_DURATION = 1000
 
 """ @brief Set number of files to record consecutively
     @note Can be any value, as long as its a positive integer
@@ -2372,7 +2372,7 @@ def process_audio_realtime():
             max_idx = np.unravel_index(np.argmax(energy_map), energy_map.shape)
             estimated_azimuth = azimuth_range[max_idx[0]]
             estimated_elevation = elevation_range[max_idx[1]]
-            pantilt.set_smoothed2(estimated_azimuth, estimated_elevation)
+            pantilt.set_smoothed2(estimated_azimuth+10, estimated_elevation)
             #pantilt.set(pan_degrees=estimated_azimuth, tilt_degrees=estimated_elevation)
 
             # Update the plot.

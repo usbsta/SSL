@@ -23,7 +23,7 @@ DEVICE_2_NUM = 2
     @param 96KHz   : 96000
     @param 192KHz  : 192000
 """
-audioSamplingRate = 96000
+audioSamplingRate = 48000
 
 """ @brief Set each audio record duration in seconds
     @note Can be any value, as long as its a positive integer
