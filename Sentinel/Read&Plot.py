@@ -19,7 +19,7 @@ CHUNK = int(0.1 * RATE)  # Process 100 ms per chunk
 LOWCUT = 400.0  # Lower cutoff frequency in Hz
 HIGHCUT = 3000.0  # Upper cutoff frequency in Hz
 FILTER_ORDER = 5  # Filter order for Butterworth filter
-c = 343.1  # Speed of sound in air (m/s)
+c = 343  # Speed of sound in air (m/s)
 
 # Define beamforming grid for azimuth and elevation angles
 azimuth_range = np.arange(-180, 181, 4)  # Azimuth from -180° to 180° in 4° steps
