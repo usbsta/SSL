@@ -2,11 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import wave
-import time
 from pyproj import Transformer
 
 # Import new beamforming functions from Pruebas.functions
-from Pruebas.functions import (
+from Sentinel.Pruebas.functions import (
     initialize_microphone_positions,
     calculate_delays_for_direction,
     apply_beamforming,

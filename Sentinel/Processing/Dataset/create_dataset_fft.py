@@ -4,10 +4,10 @@ import argparse
 from extract_fft_features import process_audio_data
 
 # Import parameters of the experiments and files
-from Record.experiments_config import get_experiment_config
+from Sentinel.experiments_config import get_experiment_config
 
 # Import helper functions from your beamforming module
-from Record.functions import (
+from Sentinel.functions import (
     initialize_microphone_positions,  # Returns an array with microphone positions in 3D space.
     load_flight_data,  # Loads flight data from a CSV file (returns a DataFrame and reference parameters).
     calculate_initial_offsets,  # Computes initial azimuth and elevation offsets based on flight data.

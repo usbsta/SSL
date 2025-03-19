@@ -6,7 +6,7 @@ import time
 # ---------------------------------------------------
 # Import functions from the external module 'functions.py'
 # ---------------------------------------------------
-from Pruebas.functions import (
+from Sentinel.Pruebas.functions import (
     initialize_microphone_positions,
     calculate_delays_for_direction,
     apply_beamforming,
