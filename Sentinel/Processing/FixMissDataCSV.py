@@ -3,7 +3,7 @@ import numpy as np
 
 # Load the CSV file. Adjust 'your_file.csv' to the actual filename.
 #df = pd.read_csv('/Users/30068385/OneDrive - Western Sydney University/FlightRecord/Holybro X500/CSV/25 Nov/21.csv')
-df = pd.read_csv('/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/4/Mar-3rd-2025-02-40PM-Flight-Airdata.csv')
+df = pd.read_csv('/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/1/Mar-18th-2025-11-19AM-Flight-Airdata.csv')
 
 
 # Asegurarse que la columna de tiempo no tenga duplicados.
@@ -21,8 +21,12 @@ df.index = pd.to_numeric(df.index, errors='coerce')
 df = df.sort_index()
 
 # Identify the start and end times
-start_time = int(df.index.min())
-end_time = int(df.index.max())
+#start_time = int(df.index.min())
+#end_time = int(df.index.max())
+
+start_time = int(df.index[0])
+end_time = int(df.index[-1])
+
 
 # Crear un nuevo índice con pasos de 100 ms
 new_index = range(start_time, end_time + 1, 100)
@@ -46,4 +50,4 @@ df = df.reset_index().rename(columns={'index': 'time(millisecond)'})
 
 # Guardar el DataFrame procesado
 #df.to_csv('X500_19.csv', index=False)
-df.to_csv('Mar-3rd-2025-02-40PM-Flight-Airdata2.csv', index=False)
+df.to_csv('Mar-18th-2025-11-19AM-Flight-Airdata2.csv', index=False)

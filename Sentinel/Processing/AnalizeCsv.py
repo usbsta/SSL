@@ -5,7 +5,7 @@ import seaborn as sns
 
 
 #csv_file_path = '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/Holybro X500/CSV/25 Nov/4 Dataset/X500_19.csv'
-csv_file_path = '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/2/Mar-3rd-2025-02-06PM-Flight-Airdata.csv'
+csv_file_path = '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/1/Mar-18th-2025-11-19AM-Flight-Airdata.csv'
 
 #csv_data = pd.read_csv(csv_file_path, encoding='utf-16', engine='python')
 csv_data = pd.read_csv(csv_file_path, encoding='utf-8', engine='python')
