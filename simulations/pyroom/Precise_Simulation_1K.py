@@ -75,7 +75,7 @@ def simulate_drone_flight_singleband(
     raw_drone, sr_drone = sf.read(drone_audio_file)
     if sr_drone != sample_rate:
         factor = sample_rate / sr_drone
-        raw_drone = resample(raw_drone, int(len(raw_drone)*factor))
+        raw_drone = resample(raw_drone, int(len(raw_drone) * factor))
 
     # 3) Prepare final buffers for each mic
     mic_signals = np.zeros((n_mics, n_samples_total))
@@ -91,36 +91,29 @@ def simulate_drone_flight_singleband(
     drone_duration = drone_len / sample_rate
 
     # 5) Main loop: for each flight position
+    # For each flight position
     for idx in tqdm(range(n_positions), desc="Simulating flight single freq"):
         t_emit = idx * dt_flight
-        drone_pos = flight_positions[idx]  # [X, Y, Z]
+        sample_in_audio = int(t_emit * sample_rate)
+        desired_segment_length = int(dt_flight * sample_rate)  # Full duration per flight step (e.g., 4800 samples)
 
-        distances = np.linalg.norm(mic_positions - drone_pos, axis=1) + epsilon
-        delays = distances / sound_speed
+        if sample_in_audio + desired_segment_length > len(raw_drone):
+            # If not enough samples remain, pad with zeros
+            segment = raw_drone[sample_in_audio:]
+            segment = np.concatenate((segment, np.zeros(desired_segment_length - len(segment))))
+        else:
+            segment = raw_drone[sample_in_audio: sample_in_audio + desired_segment_length]
 
+        # Continue with pitch shift and processing...
         pitch = pitch_factors[idx]
-
-        # Loop portion of the audio
-        t_in_audio = (t_emit % drone_duration)
-        sample_in_audio = int(t_in_audio * sample_rate)
-        segment = raw_drone[sample_in_audio:]
-
-        # If near end, wrap
-        if len(segment) < 2000:
-            wrap_needed = 2000 - len(segment)
-            segment = np.concatenate((segment, raw_drone[:wrap_needed]))
-
-        # Apply pitch shift
-        mod_drone = resample_poly(segment, up=int(pitch*1000), down=1000)
+        mod_drone = resample_poly(segment, up=int(pitch * 1000), down=1000)
         mod_drone = mod_drone / (np.max(np.abs(mod_drone)) + epsilon)
 
-        # For each mic
+        # Then, for each microphone, apply delay and attenuation...
         for mic_idx in range(n_mics):
-            dist = distances[mic_idx]
-            t_arrival = t_emit + delays[mic_idx]
+            dist = np.linalg.norm(mic_positions[mic_idx] - flight_positions[idx]) + epsilon
+            t_arrival = t_emit + (dist / sound_speed)
             sample_arrival = int(t_arrival * sample_rate)
-
-            # Single freq attenuation
             att_factor = iso9613_attenuation_factor(
                 distance=dist,
                 frequency=freq_approx,
@@ -128,27 +121,37 @@ def simulate_drone_flight_singleband(
                 humidity=humidity,
                 pressure=pressure_kpa
             )
-
-            end_idx = min(sample_arrival+len(mod_drone), n_samples_total)
+            end_idx = min(sample_arrival + len(mod_drone), n_samples_total)
             seg_len = end_idx - sample_arrival
             if seg_len > 0:
-                mic_signals[mic_idx, sample_arrival:end_idx] += mod_drone[:seg_len]*att_factor
+                mic_signals[mic_idx, sample_arrival:end_idx] += mod_drone[:seg_len] * att_factor
 
-    # 6) Save final result
+    # 5) Group microphone signals into 4 devices (each with 6 microphones)
+    n_devices = 4
+    mics_per_device = 6
+    devices = []
+    for device_idx in range(n_devices):
+        # Extract signals for 6 microphones corresponding to the current device
+        device_signal = mic_signals[device_idx*mics_per_device : (device_idx+1)*mics_per_device, :]
+        # Transpose to shape (n_samples_total, 6) for multi-channel WAV writing
+        device_signal = device_signal.T
+        devices.append(device_signal)
+
+    # 6) Save each device as a multi-channel WAV file
     os.makedirs(output_folder, exist_ok=True)
-    for m in range(n_mics):
-        sig_m = mic_signals[m]
-        sig_m = sig_m / (np.max(np.abs(sig_m))+epsilon)
-        outpath = os.path.join(output_folder, f"mic_{m+1:02d}_Precise.wav")
-        sf.write(outpath, sig_m, sample_rate)
+    for device_idx, device_signal in enumerate(devices):
+        # Normalize the device signal to prevent clipping
+        device_signal = device_signal / (np.max(np.abs(device_signal)) + epsilon)
+        outpath = os.path.join(output_folder, f"device_{device_idx+1}.wav")
+        sf.write(outpath, device_signal, sample_rate)
         print(f"Saved {outpath}")
 
 # Example usage:
 if __name__ == '__main__':
      simulate_drone_flight_singleband(
-        reference_csv="/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv",
-        flight_csv="/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata2.csv",
-        drone_audio_file="/Users/30068385/OneDrive - Western Sydney University/recordings/Noise Ref/DJI_Air_Sound_20min.wav",
+        reference_csv="/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv",
+        flight_csv="/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata.csv",
+        drone_audio_file="/Users/a30068385/OneDrive - Western Sydney University/recordings/Noise Ref/DJI_Air_Sound_20min.wav",
          freq_approx=1000.0,
-         output_folder='sim_singleband'
+         output_folder='sim_singlebandOSX'
      )
