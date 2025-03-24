@@ -15,6 +15,7 @@ from pyproj import Transformer
 
 from Utilities.Acoustic import iso9613_attenuation_factor
 from Utilities.functions import initialize_microphone_positions_24
+from Utilities.geo_utils import compute_relative_flight_positions
 
 def compute_relative_flight_positions(flight_csv_path, reference_csv_path, save_csv=False, output_path=None):
     """

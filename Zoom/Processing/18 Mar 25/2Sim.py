@@ -20,11 +20,11 @@ CHUNK = int(BUFFER * RATE)
 c = 343
 RECORD_SECONDS = 120000
 lowcut = 200.0
-highcut = 8000.0
+highcut = 800.0
 skip_seconds = 0
 
-azimuth_range = np.arange(-180, 181, 4)
-elevation_range = np.arange(0, 91, 4)
+azimuth_range = np.arange(-180, 181, 8)
+elevation_range = np.arange(0, 91, 8)
 
 mic_positions, delay_samples, num_mics = initialize_beamforming_params(azimuth_range, elevation_range, c, RATE)
 
@@ -45,8 +45,8 @@ drones_config = [
         'altitude_col': 'altitude_above_seaLevel(feet)',
         'longitude_col': 'longitude',
         'time_col': 'time(millisecond)',
-        'initial_azimuth': -55.0,
-        'initial_elevation': 0.0,
+        'initial_azimuth': -50.0,
+        'initial_elevation': -5.0,
         'start_index': 0,
     }
 ]

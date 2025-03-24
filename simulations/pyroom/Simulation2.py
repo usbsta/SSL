@@ -15,52 +15,7 @@ from pyproj import Transformer
 
 from Utilities.Acoustic import iso9613_attenuation_factor
 from Utilities.functions import initialize_microphone_positions_24
-
-def compute_relative_flight_positions(flight_csv_path, reference_csv_path, save_csv=False, output_path=None):
-    """
-    Convert drone GPS flight data to relative ENU positions (meters) with respect to a reference point.
-    Uses the EPSG:32756 projection (same as the beamforming code) and converts altitude from feet to meters.
-    Returns an array of shape [N x 3] with [X (East), Y (North), Z (Altitude difference in meters)].
-    """
-    import pandas as pd
-    # Load CSV files
-    ref_df = pd.read_csv(reference_csv_path, low_memory=False)
-    flight_df = pd.read_csv(flight_csv_path, low_memory=False)
-
-    # Standardize column names
-    ref_df.columns = [col.strip().lower() for col in ref_df.columns]
-    flight_df.columns = [col.strip().lower() for col in flight_df.columns]
-
-    # Identify latitude, longitude, and altitude columns (assuming they contain 'lat', 'lon' and 'alt')
-    lat_col = [col for col in ref_df.columns if 'lat' in col][0]
-    lon_col = [col for col in ref_df.columns if 'lon' in col][0]
-    alt_col = [col for col in ref_df.columns if 'alt' in col][0]
-
-    # Get reference coordinates from the reference CSV
-    lat0 = ref_df[lat_col].dropna().values[0]
-    lon0 = ref_df[lon_col].dropna().values[0]
-    # Convert altitude from feet to meters (assuming input altitude is in feet)
-    alt0 = ref_df[alt_col].dropna().values[0] * 0.3048
-
-    # Create a transformer using the same projection as used in beamforming
-    transformer = Transformer.from_crs("EPSG:4326", "EPSG:32756", always_xy=True)
-    ref_x, ref_y = transformer.transform(lon0, lat0)
-
-    relative_positions = []
-    for _, row in flight_df.iterrows():
-        try:
-            lat = float(row[lat_col])
-            lon = float(row[lon_col])
-            alt = float(row[alt_col]) * 0.3048  # Convert altitude to meters
-            x, y = transformer.transform(lon, lat)
-            dx = x - ref_x
-            dy = y - ref_y
-            dz = alt - alt0
-            relative_positions.append([dx, dy, dz])
-        except Exception as e:
-            continue
-
-    return np.array(relative_positions)
+from Utilities.geo_utils import compute_relative_flight_positions
 
 def simulate_drone_flight_singleband_no_pitch(
     reference_csv,
@@ -186,7 +141,7 @@ if __name__ == '__main__':
     simulate_drone_flight_singleband_no_pitch(
         reference_csv="/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv",
         flight_csv="/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata.csv",
-        drone_audio_file="/Users/a30068385/OneDrive - Western Sydney University/recordings/Noise Ref/DJI_Air_Sound_20min.wav",
+        drone_audio_file="/Users/a30068385/OneDrive - Western Sydney University/recordings/Noise Ref/sine_20min.wav",
         freq_approx=1000.0,
         output_folder='sim_singleband_nopitch'
     )
