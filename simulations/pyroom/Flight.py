@@ -10,7 +10,7 @@ from Utilities.geo_utils import compute_relative_flight_positions
 reference_csv = '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv'
 flight_csv = '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/1/Mar-18th-2025-11-19AM-Flight-Airdata.csv'
 
-drone_audio_file = '/Users/30068385/OneDrive - Western Sydney University/recordings/Noise Ref/DJI_Air_Sound_5min.wav'
+drone_audio_file = '/Users/30068385/OneDrive - Western Sydney University/recordings/Noise Ref/DJI_Air_Sound_20seg.wav'
 output_folder = 'simulated_mics_wav'
 
 sound_speed = 343  # m/s
@@ -32,14 +32,14 @@ if sr != sample_rate:
     drone_signal = resample(drone_signal, int(len(drone_signal) * sample_rate / sr))
 drone_signal = drone_signal / np.max(np.abs(drone_signal))
 
-# New: Compute total duration in seconds and samples
+#Compute total duration in seconds and samples
 drone_len_samples = len(drone_signal)
 drone_duration_sec = drone_len_samples / sample_rate
 
 
 # --- INIT BUFFERS ---
 n_positions = flight_positions.shape[0]
-n_mics = mic_positions.shape[1]
+n_mics = mic_positions.shape[0]
 total_duration = n_positions * dt_flight
 n_samples_total = int(total_duration * sample_rate)
 mic_signals = np.zeros((n_mics, n_samples_total))
