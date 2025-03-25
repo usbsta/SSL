@@ -16,7 +16,7 @@ from Utilities.functions import (
 # -------------------------------------
 RATE = 192000  # Sampling rate in Hz
 CHUNK = int(0.1 * RATE)  # Process 100 ms per chunk
-LOWCUT = 60000.0  # Lower cutoff frequency in Hz
+LOWCUT = 20000.0  # Lower cutoff frequency in Hz
 HIGHCUT = 90000.0  # Upper cutoff frequency in Hz
 FILTER_ORDER = 5  # Filter order for Butterworth filter
 c = 343  # Speed of sound in air (m/s)
@@ -118,7 +118,8 @@ def process_audio_file(wav_filename):
         estimated_elevation = elevation_range[max_idx[1]]
 
         heatmap.set_data(energy_map.T)
-        heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))
+        #heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))
+        heatmap.set_clim(1e6, 1e10)
         max_energy_marker.set_data([estimated_azimuth], [estimated_elevation])
         fig.canvas.draw()
         fig.canvas.flush_events()
@@ -136,7 +137,7 @@ def process_audio_file(wav_filename):
 # -------------------------------------
 wav_filenames = [
     #'/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/20250303_133939_File0_Master_device.wav'
-    'C:/Users/30068385/OneDrive - Western Sydney University/ICNS/PhD/simulations/pyroom/offline_file_number_0_master_device96D.wav'
+    'C:/Users/30068385/OneDrive - Western Sydney University/ICNS/PhD/simulations/pyroom/offline_file_number_0_master_device96.wav'
 ]
 
 for wav_file in wav_filenames:
