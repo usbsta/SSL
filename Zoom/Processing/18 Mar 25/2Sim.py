@@ -20,34 +20,34 @@ CHUNK = int(BUFFER * RATE)
 c = 343
 RECORD_SECONDS = 120000
 lowcut = 200.0
-highcut = 8000.0
-skip_seconds = 72
+highcut = 800.0
+skip_seconds = 0
 
-azimuth_range = np.arange(-180, 181, 5)
-elevation_range = np.arange(0, 91, 5)
+azimuth_range = np.arange(-180, 181, 8)
+elevation_range = np.arange(0, 91, 8)
 
 mic_positions, delay_samples, num_mics = initialize_beamforming_params(azimuth_range, elevation_range, c, RATE)
 
 wav_filenames = [
-    '/Users/30068385/OneDrive - Western Sydney University/recordings/Drone/22 Nov 24/1/20241122_120459_device_1_sync_part1.wav',
-    '/Users/30068385/OneDrive - Western Sydney University/recordings/Drone/22 Nov 24/1/20241122_120501_device_2_sync_part1.wav',
-    '/Users/30068385/OneDrive - Western Sydney University/recordings/Drone/22 Nov 24/1/20241122_120502_device_3_sync_part1.wav',
-    '/Users/30068385/OneDrive - Western Sydney University/recordings/Drone/22 Nov 24/1/20241122_120503_device_4_sync_part1.wav'
+    '/Users/a30068385/OneDrive - Western Sydney University/recordings/simulated/18 Mar 25/2N/device_1.wav',
+    '/Users/a30068385/OneDrive - Western Sydney University/recordings/simulated/18 Mar 25/2N/device_2.wav',
+    '/Users/a30068385/OneDrive - Western Sydney University/recordings/simulated/18 Mar 25/2N/device_3.wav',
+    '/Users/a30068385/OneDrive - Western Sydney University/recordings/simulated/18 Mar 25/2N/device_4.wav'
 ]
 
 drones_config = [
     {
-        'name': 'DJI Inspire 1_1',
-        'ref_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/22 Nov/Ref/Nov-22nd-2024-11-45AM-Flight-Airdata.csv',
+        'name': 'DJI Air 3',
+        'ref_csv': '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv',
         #'ref_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/22 Nov/Ref/Nov-22nd-2024-11-48AM-Flight-Airdata.csv',
-        'flight_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/22 Nov/1/Inspire_Nov-22nd-2024-11-55AM-Flight-Airdata.csv',
+        'flight_csv': '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata.csv',
         'latitude_col': 'latitude',
         'altitude_col': 'altitude_above_seaLevel(feet)',
         'longitude_col': 'longitude',
         'time_col': 'time(millisecond)',
-        'initial_azimuth': 6.0,
-        'initial_elevation': 0.0,
-        'start_index': 91,
+        'initial_azimuth': -50.0,
+        'initial_elevation': -5.0,
+        'start_index': 0,
     }
 ]
 
@@ -114,7 +114,7 @@ def process_drone_data(drone_config):
                     extent=[azimuth_range[0], azimuth_range[-1], elevation_range[0], elevation_range[-1]],
                     origin='lower', aspect='auto', cmap='jet', interpolation='nearest')
 
-    line_csv, = ax.plot([], [], 'k+', label='CSV Trajectory')
+    line_csv, = ax.plot([], [], 'k+', markersize = 30, label='CSV Trajectory')
     fig.colorbar(cax, ax=ax, label='Energy')
     ax.set_xlabel('Azimuth (deg)')
     ax.set_ylabel('Elevation (deg)')
@@ -198,9 +198,10 @@ def process_drone_data(drone_config):
         max_energy_marker.set_data([estimated_azimuth], [estimated_elevation])
 
         # Agregar el punto CSV actual a la trayectoria
-        csv_azimuths.append(csv_azimuth)
-        csv_elevations.append(csv_elevation)
-        line_csv.set_data(csv_azimuths, csv_elevations)
+        #csv_azimuths.append(csv_azimuth)
+        #csv_elevations.append(csv_elevation)
+        #line_csv.set_data(csv_azimuths, csv_elevations)
+        line_csv.set_data([csv_azimuth], [csv_elevation])
 
         fig.canvas.draw()
         fig.canvas.flush_events()

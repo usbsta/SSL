@@ -149,21 +149,33 @@ def simulate_drone_flight_banded(
                 if seg_len > 0:
                     mic_signals[mic_idx, sample_arrival:end_idx] += mod_band[:seg_len]*att_factor
 
-    # 7) Save result
+    # 7) Group microphone signals into 4 devices (each with 6 microphones)
+    n_devices = 4
+    mics_per_device = 6
+    devices = []
+    for device_idx in range(n_devices):
+        # Extract signals for 6 microphones corresponding to the current device
+        device_signal = mic_signals[device_idx*mics_per_device : (device_idx+1)*mics_per_device, :]
+        # Transpose to shape (n_samples_total, 6) for multi-channel WAV writing
+        device_signal = device_signal.T
+        devices.append(device_signal)
+
+    # 6) Save each device as a multi-channel WAV file
     os.makedirs(output_folder, exist_ok=True)
-    for m in range(n_mics):
-        sig_m = mic_signals[m]
-        sig_m = sig_m / (np.max(np.abs(sig_m))+1e-12)
-        sf.write(os.path.join(output_folder, f"mic_{m+1:02d}_precise.wav"), sig_m, sample_rate)
-        print(f"Saved mic_{m+1:02d}.wav")
+    for device_idx, device_signal in enumerate(devices):
+        # Normalize the device signal to prevent clipping
+        device_signal = device_signal / (np.max(np.abs(device_signal)) + epsilon)
+        outpath = os.path.join(output_folder, f"device_{device_idx+1}.wav")
+        sf.write(outpath, device_signal, sample_rate)
+        print(f"Saved {outpath}")
 
 
 # Example usage:
 if __name__ == "__main__":
     simulate_drone_flight_banded(
-        reference_csv="/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv",
-        flight_csv="/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/1/Mar-18th-2025-11-19AM-Flight-Airdata.csv",
-        drone_audio_file="/Users/30068385/OneDrive - Western Sydney University/recordings/Noise Ref/DJI_Air_Sound_30min.wav",
+        reference_csv="/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv",
+        flight_csv="/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata2.csv",
+        drone_audio_file="/Users/a30068385/OneDrive - Western Sydney University/recordings/Noise Ref/DJI_Air_Sound_20min.wav",
         center_frequencies=[125,250,500,1000,2000,4000,8000],
         output_folder="sim_banded_octave"
     )
