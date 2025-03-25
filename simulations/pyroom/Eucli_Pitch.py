@@ -32,7 +32,7 @@ def simulate_drone_flight_singleband(
     drone_audio_file,
     freq_approx=1000.0,           # single freq approximation
     output_folder='simulated_singleband',
-    sample_rate=48000,
+    sample_rate=96000,
     dt_flight=0.1,
     sound_speed=343.0,
     max_pitch_shift=1.1,
@@ -142,7 +142,7 @@ def simulate_drone_flight_singleband(
     for device_idx, device_signal in enumerate(devices):
         # Normalize the device signal to prevent clipping
         device_signal = device_signal / (np.max(np.abs(device_signal)) + epsilon)
-        outpath = os.path.join(output_folder, f"device_{device_idx+1}.wav")
+        outpath = os.path.join(output_folder, f"device_{device_idx+1}96SE.wav")
         sf.write(outpath, device_signal, sample_rate)
         print(f"Saved {outpath}")
 

@@ -128,7 +128,7 @@ def simulate_drone_flight_beamform_based(
     os.makedirs(output_folder, exist_ok=True)
     for device_idx, device_signal in enumerate(devices):
         device_signal = device_signal / (np.max(np.abs(device_signal)) + epsilon)
-        outpath = os.path.join(output_folder, f"device_{device_idx + 1}D96.wav")
+        outpath = os.path.join(output_folder, f"device_{device_idx + 1}D96Dot.wav")
         sf.write(outpath, device_signal, sample_rate)
         print(f"Saved {outpath}")
 
