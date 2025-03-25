@@ -14,22 +14,31 @@ from Utilities.functions import (
 # -------------------------------------
 # Parameters and Precomputations
 # -------------------------------------
-RATE = 48000  # Sampling rate in Hz
+RATE = 192000  # Sampling rate in Hz
 CHUNK = int(0.1 * RATE)  # Process 100 ms per chunk
-LOWCUT = 400.0  # Lower cutoff frequency in Hz
-HIGHCUT = 3000.0  # Upper cutoff frequency in Hz
+LOWCUT = 60000.0  # Lower cutoff frequency in Hz
+HIGHCUT = 90000.0  # Upper cutoff frequency in Hz
 FILTER_ORDER = 5  # Filter order for Butterworth filter
 c = 343  # Speed of sound in air (m/s)
 
 # Define beamforming grid for azimuth and elevation angles
-azimuth_range = np.arange(-180, 181, 4)  # Azimuth from -180° to 180° in 4° steps
-elevation_range = np.arange(0, 91, 4)  # Elevation from 0° to 90° in 4° steps
+azimuth_range = np.arange(-180, 181, 5)  # Azimuth from -180° to 180° in 4° steps
+elevation_range = np.arange(0, 91, 90)  # Elevation from 0° to 90° in 4° steps
 
 # Initialize microphone positions and determine the number of channels
-mic_positions = microphone_positions_8_medium()
-
-CHANNELS = mic_positions.shape[0]  # Number of microphones based on geometry
-
+#mic_positions = microphone_positions_8_medium()
+mic_positions = [
+    #(0.0, 0.0,0),
+    (0.055, 0.0,0),
+    #(0.062, 0.007,0),
+    (0.062, 0.014,0),
+    #(0.055, 0.021,0),
+    (0.0, 0.021,0),
+    #(-0.007, 0.014,0),
+    (-0.007, 0.007,0)
+]
+#CHANNELS = mic_positions.shape[0]  # Number of microphones based on geometry
+CHANNELS = 4
 
 # Precompute delay samples for each (azimuth, elevation) pair
 precomputed_delays = np.empty((len(azimuth_range), len(elevation_range), CHANNELS), dtype=np.int32)
@@ -127,7 +136,7 @@ def process_audio_file(wav_filename):
 # -------------------------------------
 wav_filenames = [
     #'/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/20250303_133939_File0_Master_device.wav'
-    'C:/Users/30068385/OneDrive - Western Sydney University/ICNS/PhD/simulations/pyroom/offline_file_number_0_master_device.wav'
+    'C:/Users/30068385/OneDrive - Western Sydney University/ICNS/PhD/simulations/pyroom/offline_file_number_0_master_device96D.wav'
 ]
 
 for wav_file in wav_filenames:
