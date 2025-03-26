@@ -85,6 +85,7 @@ def compute_relative_flight_positions(flight_csv_path, reference_csv_path, save_
     return np.array(relative_positions)
 
 
+
 def calculate_delays_for_direction(mic_positions, azimuth, elevation, sample_rate, speed_of_sound):
     """
     Computes delay samples for beamforming given a direction (azimuth and elevation).
