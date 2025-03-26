@@ -14,10 +14,10 @@ from Utilities.functions import (
 # -------------------------------------
 # Parameters and Precomputations
 # -------------------------------------
-RATE = 192000  # Sampling rate in Hz
+RATE = 48000  # Sampling rate in Hz
 CHUNK = int(0.1 * RATE)  # Process 100 ms per chunk
-LOWCUT = 20000.0  # Lower cutoff frequency in Hz
-HIGHCUT = 90000.0  # Upper cutoff frequency in Hz
+LOWCUT = 1000.0  # Lower cutoff frequency in Hz
+HIGHCUT = 18000.0  # Upper cutoff frequency in Hz
 FILTER_ORDER = 5  # Filter order for Butterworth filter
 c = 343  # Speed of sound in air (m/s)
 
@@ -28,17 +28,17 @@ elevation_range = np.arange(0, 91, 90)  # Elevation from 0° to 90° in 4° step
 # Initialize microphone positions and determine the number of channels
 #mic_positions = microphone_positions_8_medium()
 mic_positions = [
-    #(0.0, 0.0,0),
+    (0.0, 0.0,0),
     (0.055, 0.0,0),
-    #(0.062, 0.007,0),
-    (0.062, 0.014,0),
-    #(0.055, 0.021,0),
-    (0.0, 0.021,0),
-    #(-0.007, 0.014,0),
+    (0.062, 0.007,0),
+    (0.062, 0.017,0),
+    (0.055, 0.024,0),
+    (0.0, 0.024,0),
+    (-0.007, 0.017,0),
     (-0.007, 0.007,0)
 ]
 #CHANNELS = mic_positions.shape[0]  # Number of microphones based on geometry
-CHANNELS = 4
+CHANNELS = 8
 
 # Precompute delay samples for each (azimuth, elevation) pair
 precomputed_delays = np.empty((len(azimuth_range), len(elevation_range), CHANNELS), dtype=np.int32)
@@ -119,7 +119,7 @@ def process_audio_file(wav_filename):
 
         heatmap.set_data(energy_map.T)
         #heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))
-        heatmap.set_clim(1e6, 1e10)
+        heatmap.set_clim(1e6, 0.1e9)
         max_energy_marker.set_data([estimated_azimuth], [estimated_elevation])
         fig.canvas.draw()
         fig.canvas.flush_events()
@@ -137,7 +137,7 @@ def process_audio_file(wav_filename):
 # -------------------------------------
 wav_filenames = [
     #'/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/20250303_133939_File0_Master_device.wav'
-    'C:/Users/30068385/OneDrive - Western Sydney University/ICNS/PhD/simulations/pyroom/offline_file_number_0_master_device96.wav'
+    'C:/Users/30068385/OneDrive - Western Sydney University/ICNS/PhD/simulations/pyroom/offline_file_number_0_master_device2.wav'
 ]
 
 for wav_file in wav_filenames:
