@@ -135,7 +135,7 @@ def simulate_drone_flight_spherical(
     os.makedirs(output_folder, exist_ok=True)
     for device_idx, device_signal in enumerate(devices):
         device_signal = device_signal / (np.max(np.abs(device_signal)) + epsilon)
-        outpath = os.path.join(output_folder, f"device_{device_idx + 1}DEu96.wav")
+        outpath = os.path.join(output_folder, f"device_{device_idx + 1}SEu96.wav")
         sf.write(outpath, device_signal, sample_rate)
         print(f"Saved {outpath}")
 
@@ -144,9 +144,7 @@ if __name__ == '__main__':
     simulate_drone_flight_spherical(
         reference_csv="/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv",
         flight_csv="/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata.csv",
-        drone_audio_file="/Users/a30068385/OneDrive - Western Sydney University/recordings/Noise Ref/DJI_Air_Sound_20min.wav",
-        #sine_20min.wav
-        #DJI_Air_Sound_20min.wav
+        drone_audio_file="/Users/a30068385/OneDrive - Western Sydney University/recordings/Noise Ref/sine_20min.wav",
         freq_approx=1000.0,
         output_folder='sim_spherical'
     )

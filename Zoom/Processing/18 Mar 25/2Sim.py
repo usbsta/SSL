@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from pyproj import Transformer
+import librosa
 
 from audio_beamforming import beamform_time
 from geo_utils import (wrap_angle, calculate_angle_difference,
@@ -15,7 +16,7 @@ from io_utils import (read_wav_block, skip_wav_seconds, apply_bandpass_filter,
 # ----------------------- GENERAL CONFIGURATIONS -----------------------
 CHANNELS = 6
 RATE = 48000
-BUFFER = 0.1
+BUFFER = 0.4
 CHUNK = int(BUFFER * RATE)
 c = 343
 RECORD_SECONDS = 120000
@@ -23,30 +24,30 @@ lowcut = 200.0
 highcut = 800.0
 skip_seconds = 0
 
-azimuth_range = np.arange(-180, 181, 8)
-elevation_range = np.arange(0, 91, 8)
+azimuth_range = np.arange(-180, 181, 4)
+elevation_range = np.arange(0, 91, 4)
 
 mic_positions, delay_samples, num_mics = initialize_beamforming_params(azimuth_range, elevation_range, c, RATE)
 
 wav_filenames = [
-    '/Users/a30068385/OneDrive - Western Sydney University/recordings/simulated/18 Mar 25/2N/device_1.wav',
-    '/Users/a30068385/OneDrive - Western Sydney University/recordings/simulated/18 Mar 25/2N/device_2.wav',
-    '/Users/a30068385/OneDrive - Western Sydney University/recordings/simulated/18 Mar 25/2N/device_3.wav',
-    '/Users/a30068385/OneDrive - Western Sydney University/recordings/simulated/18 Mar 25/2N/device_4.wav'
+    'C:/Users/30068385\OneDrive - Western Sydney University\ICNS\PhD\simulations\pyroom\sim_spherical\device_1SEu192.wav',
+    'C:/Users/30068385\OneDrive - Western Sydney University\ICNS\PhD\simulations\pyroom\sim_spherical\device_2SEu192.wav',
+    'C:/Users/30068385\OneDrive - Western Sydney University\ICNS\PhD\simulations\pyroom\sim_spherical\device_3SEu192.wav',
+    'C:/Users/30068385\OneDrive - Western Sydney University\ICNS\PhD\simulations\pyroom\sim_spherical\device_4SEu192.wav'
 ]
 
 drones_config = [
     {
         'name': 'DJI Air 3',
-        'ref_csv': '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv',
+        'ref_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv',
         #'ref_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/22 Nov/Ref/Nov-22nd-2024-11-48AM-Flight-Airdata.csv',
-        'flight_csv': '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata.csv',
+        'flight_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata.csv',
         'latitude_col': 'latitude',
         'altitude_col': 'altitude_above_seaLevel(feet)',
         'longitude_col': 'longitude',
         'time_col': 'time(millisecond)',
-        'initial_azimuth': -50.0,
-        'initial_elevation': -5.0,
+        'initial_azimuth': 15.0,
+        'initial_elevation': 0.0,
         'start_index': 0,
     }
 ]
@@ -97,6 +98,8 @@ def process_drone_data(drone_config):
     elevation_offset = initial_elevation
 
     wav_files = open_wav_files(wav_filenames)
+
+
     for wav_file in wav_files:
         skip_wav_seconds(wav_file, skip_seconds, RATE)
 
@@ -136,6 +139,7 @@ def process_drone_data(drone_config):
     for time_idx, i in zip(range(0, max_iterations), range(len(flight_data))):
         for j, wav_file in enumerate(wav_files):
             block = read_wav_block(wav_file, CHUNK, CHANNELS)
+
             if block is None:
                 break
             buffers[j] = block
@@ -147,6 +151,7 @@ def process_drone_data(drone_config):
         filtered_signal = apply_bandpass_filter(combined_signal, lowcut, highcut, RATE)
 
         # Beamform
+        #energy = beamform_time(combined_signal, delay_samples)
         energy = beamform_time(filtered_signal, delay_samples)
         max_energy_idx = np.unravel_index(np.argmax(energy), energy.shape)
         estimated_azimuth = azimuth_range[max_energy_idx[0]]
