@@ -26,7 +26,7 @@ def simulate_drone_flight_spherical(
         drone_audio_file,
         freq_approx=1000.0,  # Frequency for ISO 9613 attenuation (Hz)
         output_folder='sim_spherical',
-        sample_rate=96000,
+        sample_rate=48000,
         dt_flight=0.1,  # Time step between flight positions (seconds)
         sound_speed=343.0,  # Speed of sound (m/s)
         temperature=20.0,  # Ambient temperature (°C)

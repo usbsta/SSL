@@ -116,3 +116,55 @@ def calculate_delays_for_direction(mic_positions, azimuth, elevation, sample_rat
     # Convert delays to integer sample delays
     delay_samples = np.round(delays * sample_rate).astype(np.int32)
     return delay_samples
+
+
+def compute_drone_xyz(ref_csv, flight_csv, lat_col="latitude", lon_col="longitude", alt_col="altitude",
+                      alt_factor=0.3048):
+    """
+    Compute the drone's x, y, z coordinates using a unified method.
+    This function reads the reference and flight CSV files, computes a reference point (mean of latitudes and longitudes),
+    and uses pyproj to convert geographic coordinates to a Cartesian coordinate system.
+
+    Parameters:
+        ref_csv (str): Path to the reference CSV file.
+        flight_csv (str): Path to the flight CSV file.
+        lat_col (str): Column name for latitude.
+        lon_col (str): Column name for longitude.
+        alt_col (str): Column name for altitude (in feet).
+        alt_factor (float): Factor to convert altitude to meters (default 0.3048 for feet-to-meters).
+
+    Returns:
+        drone_xyz (np.ndarray): Array with shape (n_positions, 3) containing x, y, z coordinates.
+        ref_point (tuple): (ref_x, ref_y) in the target projection.
+    """
+    import numpy as np
+    import pandas as pd
+    from pyproj import Transformer
+
+    # Load CSV data
+    ref_data = pd.read_csv(ref_csv)
+    flight_data = pd.read_csv(flight_csv)
+
+    # Compute reference latitude and longitude (mean)
+    ref_lat = ref_data[lat_col].dropna().astype(float).mean()
+    ref_lon = ref_data[lon_col].dropna().astype(float).mean()
+
+    # Initialize transformer (e.g., from WGS84 to UTM zone; adjust EPSG as needed)
+    transformer = Transformer.from_crs('epsg:4326', 'epsg:32756', always_xy=True)
+
+    # Convert reference coordinates
+    ref_x, ref_y = transformer.transform(ref_lon, ref_lat)
+
+    # Convert flight data coordinates
+    flight_x, flight_y = transformer.transform(
+        flight_data[lon_col].values.astype(float),
+        flight_data[lat_col].values.astype(float)
+    )
+
+    # Convert altitude from feet to meters
+    flight_z = flight_data[alt_col].values.astype(float) * alt_factor
+
+    # Stack coordinates: x, y, z
+    drone_xyz = np.column_stack((flight_x, flight_y, flight_z))
+
+    return drone_xyz, (ref_x, ref_y)
