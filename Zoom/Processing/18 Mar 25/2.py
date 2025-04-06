@@ -29,18 +29,18 @@ elevation_range = np.arange(0, 91, 4)
 mic_positions, delay_samples, num_mics = initialize_beamforming_params(azimuth_range, elevation_range, c, RATE)
 
 wav_filenames = [
-    '/Users/30068385/OneDrive - Western Sydney University/recordings/Drone/18 Mar 25/2/20250318_123443_device_1_sync_part1.wav',
-    '/Users/30068385/OneDrive - Western Sydney University/recordings/Drone/18 Mar 25/2/20250318_123526_device_2_sync_part1.wav',
-    '/Users/30068385/OneDrive - Western Sydney University/recordings/Drone/18 Mar 25/2/20250318_123624_device_3_sync_part1.wav',
-    '/Users/30068385/OneDrive - Western Sydney University/recordings/Drone/18 Mar 25/2/20250318_123730_device_4_sync_part1.wav'
+    '/Users/a30068385/OneDrive - Western Sydney University/recordings/Drone/18 Mar 25/2/20250318_123443_device_1_sync_part1.wav',
+    '/Users/a30068385/OneDrive - Western Sydney University/recordings/Drone/18 Mar 25/2/20250318_123526_device_2_sync_part1.wav',
+    '/Users/a30068385/OneDrive - Western Sydney University/recordings/Drone/18 Mar 25/2/20250318_123624_device_3_sync_part1.wav',
+    '/Users/a30068385/OneDrive - Western Sydney University/recordings/Drone/18 Mar 25/2/20250318_123730_device_4_sync_part1.wav'
 ]
 
 drones_config = [
     {
         'name': 'DJI Inspire 1_1',
-        'ref_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv',
+        'ref_csv': '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/Ref/Mar-18th-2025-10-31AM-Flight-Airdata.csv',
         #'ref_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/22 Nov/Ref/Nov-22nd-2024-11-48AM-Flight-Airdata.csv',
-        'flight_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata.csv',
+        'flight_csv': '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Air 3/CSV/18 Mar 25/2/Mar-18th-2025-11-55AM-Flight-Airdata.csv',
         'latitude_col': 'latitude',
         'altitude_col': 'altitude_above_seaLevel(feet)',
         'longitude_col': 'longitude',
