@@ -43,14 +43,14 @@ for i, az in enumerate(azimuth_range):
         precomputed_delays[i, j, :] = calculate_delays_for_direction(mic_positions, az, el, RATE, c)
 
 # WAV filename (single file with eight channels)
-wav_filename = '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/20250303_133939_File0_Master_device.wav'
+wav_filename = '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/20250303_133939_File0_Master_device.wav'
 
 # Drone configuration and CSV file paths
 drones_config = [
     {
         'name': 'DJI Inspire 1_1',
-        'ref_csv': '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/Ref/Mar-3rd-2025-01-35PM-Flight-Airdata.csv',
-        'flight_csv': '/Users/a30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/Mar-3rd-2025-01-39PM-Flight-Airdata2.csv',
+        'ref_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/Ref/Mar-3rd-2025-01-35PM-Flight-Airdata.csv',
+        'flight_csv': '/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/Mar-3rd-2025-01-39PM-Flight-Airdata2.csv',
         'latitude_col': 'latitude',
         'longitude_col': 'longitude',
         'altitude_col': 'altitude_above_seaLevel(feet)',

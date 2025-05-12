@@ -176,7 +176,6 @@ class UNetSmall(nn.Module):
         return output
 
 
-# Instanciar el modelo
 model = UNetSmall(in_channels=num_bins, out_channels=1).to(device)
 
 
