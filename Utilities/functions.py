@@ -7,6 +7,32 @@ from numba import njit
 from scipy.signal import butter, filtfilt
 #from experiments_config import get_experiment_config
 
+def microphone_positions_8_helicop():
+    """
+    Initialize microphone positions in 3D space.
+    Returns:
+        mic_positions (np.ndarray): Array of microphone positions.
+    """
+    # Angles for microphone placement
+    a = [0, -90, -180, -270]
+
+    # progressive distance configuration
+    h = [0.29, 0.06]
+    r = [0.16, 0.35]
+
+    # Define microphone positions
+    mic_positions = np.array([
+        [r[0] * np.cos(np.radians(a[0])), r[0] * np.sin(np.radians(a[0])), h[0]], # mic 1
+        [r[1] * np.cos(np.radians(a[1])), r[1] * np.sin(np.radians(a[1])), h[1]], # mic 2
+        [r[0] * np.cos(np.radians(a[2])), r[0] * np.sin(np.radians(a[2])), h[0]], # mic 3
+        [r[1] * np.cos(np.radians(a[3])), r[1] * np.sin(np.radians(a[3])), h[1]], # mic 4
+        [r[0] * np.cos(np.radians(a[0])), r[0] * np.sin(np.radians(a[0])), h[0]], # mic 5
+        [r[1] * np.cos(np.radians(a[1])), r[1] * np.sin(np.radians(a[1])), h[1]], # mic 6
+        [r[0] * np.cos(np.radians(a[2])), r[0] * np.sin(np.radians(a[2])), h[0]], # mic 7
+        [r[1] * np.cos(np.radians(a[3])), r[1] * np.sin(np.radians(a[3])), h[1]]  # mic 8
+    ])
+    return mic_positions
+
 def microphone_positions_8_medium():
     """
     Initialize microphone positions in 3D space.

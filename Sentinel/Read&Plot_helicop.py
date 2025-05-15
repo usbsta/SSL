@@ -2,10 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import wave
 import time
+from matplotlib.animation import FFMpegWriter
 
 # Import external beamforming functions
 from Utilities.functions import (
-    microphone_positions_8_medium,
+    microphone_positions_8_helicop,
     calculate_delays_for_direction,
     apply_beamforming,
     apply_bandpass_filter
@@ -16,7 +17,7 @@ from Utilities.functions import (
 # -------------------------------------
 RATE = 48000  # Sampling rate in Hz
 CHUNK = int(0.1 * RATE)  # Process 100 ms per chunk
-LOWCUT = 400.0  # Lower cutoff frequency in Hz
+LOWCUT = 200.0  # Lower cutoff frequency in Hz
 HIGHCUT = 3000.0  # Upper cutoff frequency in Hz
 FILTER_ORDER = 5  # Filter order for Butterworth filter
 c = 343  # Speed of sound in air (m/s)
@@ -26,7 +27,7 @@ azimuth_range = np.arange(-180, 181, 4)  # Azimuth from -180° to 180° in 4° s
 elevation_range = np.arange(0, 91, 4)  # Elevation from 0° to 90° in 4° steps
 
 # Initialize microphone positions and determine the number of channels
-mic_positions = microphone_positions_8_medium()
+mic_positions = microphone_positions_8_helicop()
 
 CHANNELS = mic_positions.shape[0]  # Number of microphones based on geometry
 
@@ -68,7 +69,7 @@ def process_audio_file(wav_filename):
     fig, ax = plt.subplots(figsize=(12, 3))
     heatmap = ax.imshow(np.zeros((len(azimuth_range), len(elevation_range))).T,
                         extent=[azimuth_range[0], azimuth_range[-1], elevation_range[0], elevation_range[-1]],
-                        origin='lower', aspect='auto', cmap='inferno')
+                        origin='lower', aspect='auto', cmap='jet')
     fig.colorbar(heatmap, ax=ax, label='Energy')
     ax.set_xlabel('Azimuth (degrees)')
     ax.set_ylabel('Elevation (degrees)')
@@ -93,6 +94,7 @@ def process_audio_file(wav_filename):
 
         # Apply bandpass filter to each channel
         filtered_chunk = apply_bandpass_filter(audio_chunk, LOWCUT, HIGHCUT, RATE, order=FILTER_ORDER)
+        #filtered_chunk /=filtered_chunk.max()
 
         # Compute the beamforming energy map
         energy_map = np.zeros((len(azimuth_range), len(elevation_range)))
@@ -127,7 +129,8 @@ def process_audio_file(wav_filename):
 # -------------------------------------
 wav_filenames = [
     #'/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/20250303_133939_File0_Master_device.wav'
-    'C:/Users/30068385/OneDrive - Western Sydney University/ICNS/PhD/simulations/pyroom/offline_file_number_0_master_device.wav'
+    #'C:/Users/a30068385/OneDrive - Western Sydney University/ICNS/PhD/simulations/pyroom/offline_file_number_0_master_device.wav'\
+    'heli_12052025.wav'
 ]
 
 for wav_file in wav_filenames:
