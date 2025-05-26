@@ -8,34 +8,29 @@ from Utilities.functions import (
     microphone_positions_8_medium,
     calculate_delays_for_direction,
     apply_beamforming,
-    apply_bandpass_filter
+    apply_bandpass_filter,
 )
 
-# -------------------------------------
-# Parameters and Precomputations
-# -------------------------------------
-RATE = 192000  # Sampling rate in Hz
-CHUNK = int(0.1 * RATE)  # Process 100 ms per chunk
-LOWCUT = 10000.0  # Lower cutoff frequency in Hz
-HIGHCUT = 70000.0  # Upper cutoff frequency in Hz
-FILTER_ORDER = 5  # Filter order for Butterworth filter
-c = 343  # Speed of sound in air (m/s)
+# ---------- Constants ----------
+RATE          = 192_000                 # Hz
+CHUNK         = int(0.1 * RATE)         # 100 ms per chunk
+LOWCUT        = 6_000.0                 # Hz
+HIGHCUT       = 30_000.0                # Hz
+FILTER_ORDER  = 5                       # Butterworth order
+c             = 343                     # m s-1
 
-# Define beamforming grid for azimuth and elevation angles
-azimuth_range = np.arange(-180, 181, 4)  # Azimuth from -180° to 180° in 4° steps
-elevation_range = np.arange(0, 90, 4)  # Elevation from 0° to 90° in 4° steps
+azimuth_range    = np.arange(-180, 181, 4)   # °
+elevation_range  = np.arange(0,   91, 4)     # °
 
-# Initialize microphone positions and determine the number of channels
-#mic_positions = microphone_positions_8_medium()
 mic_positions = [
-    (0.0, 0.0, 0.02),       #11
-    (0.0, 0.01, 0.02),      #12
-    (0.0, -0.015, 0),       #13
-    (0.0, 0.025, 0),        #14
-    (0.005, 0.005, 0.02),   #21
-    (-0.005, 0.005, 0.02),  #22
-    (0.02, 0.005, 0),       #23
-    (-0.02, 0.005, 0)       #24
+    (0.0, 0.0, 0.02),         #11
+    (0.0, 0.01, 0.02),        #12
+    (0.0, -0.015, 0.0),       #13
+    (0.0, 0.025, 0.0),        #14
+    (0.005, 0.005, 0.02),     #21
+    (-0.005, 0.005, 0.02),    #22
+    (0.02, 0.005, 0.0),       #23
+    (-0.02, 0.005, 0.0)       #24
 ]
 
 
@@ -51,19 +46,7 @@ mic_positions = [
     (-0.02, 0.005, 0)       #24
 ]
 '''
-'''
-# first oval array
-mic_positions = [
-    (0.0, 0.0,0),
-    (0.055, 0.0,0),
-    (0.062, 0.007,0),
-    (0.062, 0.017,0),
-    (0.055, 0.024,0),
-    (0.0, 0.024,0),
-    (-0.007, 0.017,0),
-    (-0.007, 0.007,0)
-]
-'''
+
 #CHANNELS = mic_positions.shape[0]  # Number of microphones based on geometry
 CHANNELS = 8
 
@@ -117,9 +100,17 @@ def process_audio_file(wav_filename):
     fig.canvas.draw()
     fig.canvas.flush_events()
 
+
+    # -------------------------------------
+    # Process the audio file chunk by chunk
+    # -------------------------------------
+    frame_idx = 0                       # <-- add this before the loop
+    start_file = time.perf_counter()    # <-- optional: overall timer
+
     # Process the audio file chunk by chunk
     while True:
         # Read a chunk of audio data from the file
+        t0 = time.perf_counter()  # <-- start timer for this chunk
         data = wf.readframes(CHUNK)
         if len(data) < CHUNK * CHANNELS * 2:  # Incomplete chunk indicates end of file
             break
@@ -146,13 +137,27 @@ def process_audio_file(wav_filename):
 
         heatmap.set_data(energy_map.T)
         #heatmap.set_clim(vmin=np.min(energy_map), vmax=np.max(energy_map))
-        heatmap.set_clim(1e7, 1e9)
+        #np.percentile(smoothed_energy, 1)
+        #heatmap.set_clim(3e7, vmax=np.max(energy_map))
+        heatmap.set_clim(np.percentile(energy_map, 50), vmax=np.max(energy_map))
+        #heatmap.set_clim(1e7, 1e9)
         max_energy_marker.set_data([estimated_azimuth], [estimated_elevation])
         fig.canvas.draw()
         fig.canvas.flush_events()
 
+
         # Delay to simulate real-time processing (approx. 100 ms per chunk)
-        time.sleep(0.1)
+        #time.sleep(0.1)
+
+        # ---------- timing & progress print ----------
+        frame_idx += 1
+        processing_time = time.perf_counter() - t0      # s
+        audio_time     = frame_idx * CHUNK / RATE       # s of audio processed
+        print(f"audio time = {audio_time:7.2f} s ")
+
+        # Delay to simulate real-time playback (100 ms)
+        time.sleep(0.1 - processing_time
+                   if processing_time < 0.1 else 0)
 
     plt.ioff()
     plt.show()
@@ -164,7 +169,7 @@ def process_audio_file(wav_filename):
 # -------------------------------------
 wav_filenames = [
     #'/Users/30068385/OneDrive - Western Sydney University/FlightRecord/DJI Inspire 1/CSV/03 Mar 25/1/20250303_133939_File0_Master_device.wav'
-    'C:/Users/30068385/OneDrive - Western Sydney University/recordings/GasLeake/GasLeakeCompSel.wav'
+    'C:/Users/30068385/OneDrive - Western Sydney University/recordings/GasLeake/robotF2.wav'
 ]
 
 for wav_file in wav_filenames:
