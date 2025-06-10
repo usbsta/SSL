@@ -158,29 +158,25 @@ def initialize_microphone_positions_24():
     return mic_positions
 
 def microphone_positions_4_ultra():
-    """
-    Initialize microphone positions in 3D space.
-    Returns:
-        mic_positions (np.ndarray): Array of microphone positions.
-    """
+    """Return microphone positions for a compact 4-channel array."""
+
     # Angles for microphone placement
     a = [0, -60, -180, -300]
 
-    # progressive distance configuration
+    # Distance configuration (radius and height)
     h = [0.35, 0.21, 0.08]
     r = [0.05, 0.015, 0.15]
 
-    # Define microphone positions
+    # Only four microphones are required.  The original implementation
+    # mistakenly returned eight positions which caused shape mismatches in
+    # consumers expecting a 4-element array.
     mic_positions = np.array([
-        [r[1] * np.cos(np.radians(a[0])), r[1] * np.sin(np.radians(a[0])), h[0]], # mic 1
-        [r[1] * np.cos(np.radians(a[2])), r[1] * np.sin(np.radians(a[2])), h[1]], # mic 2
-        [r[0] * np.cos(np.radians(a[1])), r[0] * np.sin(np.radians(a[1])), h[0]], # mic 3
-        [r[2] * np.cos(np.radians(a[1])), r[2] * np.sin(np.radians(a[1])), h[2]], # mic 4
-        [r[0] * np.cos(np.radians(a[2])), r[0] * np.sin(np.radians(a[2])), h[0]], # mic 5
-        [r[2] * np.cos(np.radians(a[2])), r[2] * np.sin(np.radians(a[2])), h[2]], # mic 6
-        [r[0] * np.cos(np.radians(a[3])), r[0] * np.sin(np.radians(a[3])), h[0]], # mic 7
-        [r[2] * np.cos(np.radians(a[3])), r[2] * np.sin(np.radians(a[3])), h[2]]  # mic 8
+        [r[1] * np.cos(np.radians(a[0])), r[1] * np.sin(np.radians(a[0])), h[0]],  # mic 1
+        [r[1] * np.cos(np.radians(a[2])), r[1] * np.sin(np.radians(a[2])), h[1]],  # mic 2
+        [r[0] * np.cos(np.radians(a[1])), r[0] * np.sin(np.radians(a[1])), h[0]],  # mic 3
+        [r[2] * np.cos(np.radians(a[1])), r[2] * np.sin(np.radians(a[1])), h[2]],  # mic 4
     ])
+
     return mic_positions
 
 # ----------------------------
