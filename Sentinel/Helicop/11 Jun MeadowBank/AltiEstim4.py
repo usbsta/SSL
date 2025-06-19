@@ -1,71 +1,46 @@
+#!/usr/bin/env python3
+"""
+Animated 3-D visualisation of four six-microphone arrays, their smoothed
+bearings, and the least-squares intersection point for every frame in
+*triangulation_debug_4arrays.csv*.
+
+> Designed to replay the full 104-second experiment at its real-time speed.
+
+Author  : Your-Name-Here
+Created : 2025-06-19
+"""
+
+from __future__ import annotations
 import numpy as np
-import wave
-import csv
-import time
-from collections import deque
-from pathlib import Path
+import pandas as pd
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D        # noqa: F401 (registers 3-D projection)
+from matplotlib.animation import FuncAnimation, FFMpegWriter, PillowWriter
+import pathlib
 
-# ── External DSP helpers ──────────────────────────────────────────────────
-from Utilities.functions import (
-    calculate_delays_for_direction,
-    apply_beamforming,
-    apply_bandpass_filter,
-)
+# ────────────────────────── File locations ──────────────────────────────
+CSV_PATH   = pathlib.Path("triangulation_debug_4arrays.csv")
+OUTPUT_MP4 = pathlib.Path("triangulation_full_smooth.mp4")
 
-from Utilities.mic_geo import (
-    mic_6_N_black_thin,
-    mic_6_S_orange,
-    mic_6_E_orange,
-    mic_6_W_black,
-)
-
-# ── GLOBAL SETTINGS ───────────────────────────────────────────────────────
-RATE            = 48_000            # Hz
-CHUNK           = int(0.1 * RATE)   # 100 ms blocks
-LOWCUT, HIGHCUT = 180.0, 2000.0     # Hz
-FILTER_ORDER    = 5
-SPEED_OF_SOUND  = 343.0             # m · s⁻¹
-
-AZ_RANGE = np.arange(-180, 181, 2)  # °
-EL_RANGE = np.arange(10, 50, 1)      # °
-
-# UTM zone 56 S centres (Easting, Northing, Alt-m)
-P_N = np.array([322955.1, 6256643.2, 0.0])
-P_S = np.array([322951.6, 6256580.0, 0.0])
-P_E = np.array([322980.8, 6256638.4, 0.0])
-P_W = np.array([322918.0, 6256605.4, 0.0])
-
-# WAV paths – edit as needed
-ROOT = Path("/Users/30068385/OneDrive - Western Sydney University/recordings/Helicop/11_06_25")
-ARRAYS = {
-    'N': {
-        'wav': ROOT / "N.wav",
-        'centre': P_N,
-        'mics': mic_6_N_black_thin(),
-    },
-    'S': {
-        'wav': ROOT / "S.wav",
-        'centre': P_S,
-        'mics': mic_6_S_orange(),
-    },
-    'E': {
-        'wav': ROOT / "E.wav",
-        'centre': P_E,
-        'mics': mic_6_E_orange(),
-    },
-    'W': {
-        'wav': ROOT / "W.wav",
-        'centre': P_W,
-        'mics': mic_6_W_black(),
-    },
+# ─────────────────────── Array centres (UTM 56 S) ───────────────────────
+ARRAY_CENTRES = {
+    "N": np.array([322_955.1, 6_256_643.2, 0.0]),  # East, North, Up [m]
+    "S": np.array([322_951.6, 6_256_580.0, 0.0]),
+    "E": np.array([322_980.8, 6_256_638.4, 0.0]),
+    "W": np.array([322_918.0, 6_256_605.4, 0.0]),
 }
 
-CSV_OUTPUT = "triangulation_debug_4arrays.csv"
-MIN_ALT, MAX_ALT = 0.0, 2000.0       # altitude validity range [m]
-START_TIME, END_TIME = 0.0, 104.0  # [s] in the WAV files
+# ──────────────────────────── Parameters ────────────────────────────────
+RAY_LENGTH = 20.0          # Arrow length for visualisation [m]
+FALLBACK_GIF = OUTPUT_MP4.with_suffix(".gif")
 
-# ── Maths helpers ─────────────────────────────────────────────────────────
-def az_el_to_unit_vector(az_deg: float, el_deg: float) -> np.ndarray:
+# ─────────────────────── Helper functions ───────────────────────────────
+def az_el_to_unit(az_deg: float, el_deg: float) -> np.ndarray:
+    """
+    Convert ENU azimuth/elevation angles (degrees) to a 3-D unit vector.
+
+    0° azimuth = North, +90° = East; elevation 0–90° is upward from horizon.
+    """
     az, el = np.deg2rad([az_deg, el_deg])
     return np.array([
         np.cos(el) * np.sin(az),   # East
@@ -73,160 +48,79 @@ def az_el_to_unit_vector(az_deg: float, el_deg: float) -> np.ndarray:
         np.sin(el)                 # Up
     ])
 
-def triangulate_multi_rays(P_list, d_list):
-    """Least-squares intersection of ≥2 rays (see accompanying visualiser)."""
-    A = np.zeros((3, 3))
-    b = np.zeros(3)
-    for P, d in zip(P_list, d_list):
-        Ai = np.eye(3) - np.outer(d, d)
-        A += Ai
-        b += Ai @ P
-    X_hat = np.linalg.solve(A, b)
+# ───────────────────────────── Main code ────────────────────────────────
+def main() -> None:
+    # ── Load CSV ─────────────────────────────────────────────────────────
+    df = pd.read_csv(CSV_PATH)
 
-    # Residual diagnostics
-    res = []
-    for P, d in zip(P_list, d_list):
-        proj = P + d * np.dot(X_hat - P, d)
-        res.append(np.linalg.norm(X_hat - proj))
-    rms_err = float(np.sqrt(np.mean(np.square(res))))
-    return X_hat, rms_err
+    # Derive sampling interval from timestamps (assumes column 'time_s')
+    if "time_s" in df.columns:
+        dt  = float(np.median(np.diff(df["time_s"])))   # ≈ 0.1 s
+    else:
+        dt  = 0.1                                       # fallback
+    fps = max(1, round(1.0 / dt))                      # integer FPS for writer
 
-# ── Pre-compute delay tables (array-specific) ─────────────────────────────
-delays = {}
-for key, cfg in ARRAYS.items():
-    mpos = cfg['mics']
-    num_mics = mpos.shape[0]
-    table = np.empty((len(AZ_RANGE), len(EL_RANGE), num_mics), np.int32)
-    for i, az in enumerate(AZ_RANGE):
-        for j, el in enumerate(EL_RANGE):
-            table[i, j, :] = calculate_delays_for_direction(
-                mpos, az, el, RATE, SPEED_OF_SOUND
-            )
-    delays[key] = table
+    # ── Pre-compute direction vectors for every array & frame ────────────
+    for key in ARRAY_CENTRES:
+        vecs = df.apply(
+            lambda r: az_el_to_unit(r[f"smooth_az_{key}"], r[f"smooth_el_{key}"]),
+            axis=1,
+        )
+        df[[f"dx_{key}", f"dy_{key}", f"dz_{key}"]] = np.stack(vecs.values)
 
-# ── WAV file preparation ─────────────────────────────────────────────────
-handles = {k: wave.open(str(cfg['wav']), "rb") for k, cfg in ARRAYS.items()}
-num_mics = {k: h.getnchannels() for k, h in handles.items()}
-if len({v for v in num_mics.values()}) != 1:
-    raise RuntimeError("All WAV files must have identical channel counts.")
-NUM_MICS = list(num_mics.values())[0]
+    # ── Build the 3-D figure ─────────────────────────────────────────────
+    fig = plt.figure(figsize=(8, 6))
+    ax  = fig.add_subplot(111, projection="3d")
 
-for k, h in handles.items():
-    if h.getframerate() != RATE or h.getsampwidth() != 2:
-        raise RuntimeError(f"{k}: WAV must be 48 kHz / 16-bit PCM.")
-total_frames = {k: h.getnframes() for k, h in handles.items()}
+    # Static markers: array centres
+    for centre in ARRAY_CENTRES.values():
+        ax.scatter(*centre, marker="P", s=50)
 
-start_frame = int(START_TIME * RATE)
-end_frame   = int(END_TIME   * RATE)
-if not all(0 <= start_frame < total_frames[k] for k in ARRAYS):
-    raise RuntimeError("START_TIME out of range.")
-if not all(start_frame < end_frame <= total_frames[k] for k in ARRAYS):
-    raise RuntimeError("END_TIME out of range.")
+    # Dynamic artists: one star for the source, one arrow per array
+    src_scatter = ax.scatter([], [], [], marker="*", s=120)
+    quivers     = {k: ax.quiver([], [], [], [], [], []) for k in ARRAY_CENTRES}
 
-for h in handles.values():
-    h.setpos(start_frame)
-max_blocks = (end_frame - start_frame) // CHUNK
+    def init() -> list:
+        ax.set_xlabel("East [m]")
+        ax.set_ylabel("North [m]")
+        ax.set_zlabel("Up [m]")
+        ax.set_title("Triangulation (smoothed bearings)")
+        return [src_scatter] + list(quivers.values())
 
-# ── Per-array smoothing buffers ──────────────────────────────────────────
-buffers = {
-    k: {'az': deque(maxlen=3),
-        'el': deque(maxlen=3)}
-    for k in ARRAYS
-}
+    def update(idx: int) -> list:
+        row = df.iloc[idx]
 
-# ── CSV header ───────────────────────────────────────────────────────────
-with open(CSV_OUTPUT, "w", newline="") as f:
-    w = csv.writer(f)
-    header = ["block", "time_s"]
-    for k in ARRAYS:
-        header += [f"raw_az_{k}", f"raw_el_{k}",
-                   f"smooth_az_{k}", f"smooth_el_{k}"]
-    header += ["x_est_m", "y_est_m", "z_est_m", "rms_err_m"]
-    header += [f"dist_{k}_m" for k in ARRAYS]
-    w.writerow(header)
+        # Update source estimate
+        src_scatter._offsets3d = ([row["x_est_m"]],
+                                  [row["y_est_m"]],
+                                  [row["z_est_m"]])
 
-print("▶ Starting 4-array debug loop…")
-# ── Main processing loop ─────────────────────────────────────────────────
-for blk in range(max_blocks):
-    # --- read CHUNK frames from each array ---
-    frames = {k: h.readframes(CHUNK) for k, h in handles.items()}
-    if any(len(fr) < CHUNK * NUM_MICS * 2 for fr in frames.values()):
-        break
+        # Update arrows for each array
+        for k, centre in ARRAY_CENTRES.items():
+            dx, dy, dz = (row[f"dx_{k}"] * RAY_LENGTH,
+                          row[f"dy_{k}"] * RAY_LENGTH,
+                          row[f"dz_{k}"] * RAY_LENGTH)
+            quivers[k].remove()                         # erase previous arrow
+            quivers[k] = ax.quiver(*centre, dx, dy, dz) # draw new arrow
 
-    # --- per-array DSP ---
-    azel_raw = {}
-    for k, cfg in ARRAYS.items():
-        # int16 → shape (samples, mics)
-        audio = np.frombuffer(frames[k], np.int16).reshape(-1, NUM_MICS)
-        filtd = apply_bandpass_filter(audio, LOWCUT, HIGHCUT,
-                                      RATE, order=FILTER_ORDER)
-        filtd = filtd / np.abs(filtd).max() if filtd.max() else filtd
+        return [src_scatter] + list(quivers.values())
 
-        # Energy map
-        e_map = np.zeros((len(AZ_RANGE), len(EL_RANGE)))
-        tbl = delays[k]
-        for i, az in enumerate(AZ_RANGE):
-            for j, el in enumerate(EL_RANGE):
-                beam = apply_beamforming(filtd, tbl[i, j, :])
-                e_map[i, j] = np.sum(beam ** 2) / CHUNK
-        idx = np.unravel_index(np.argmax(e_map), e_map.shape)
-        azel_raw[k] = (AZ_RANGE[idx[0]], EL_RANGE[idx[1]])
+    # ── Construct the animation ─────────────────────────────────────────
+    frames = range(len(df))   # use *all* rows → full 104-s clip
+    anim = FuncAnimation(fig, update, frames=frames,
+                         init_func=init, interval=dt * 1000, blit=False)
 
-        # update buffers
-        buffers[k]['az'].append(azel_raw[k][0])
-        buffers[k]['el'].append(azel_raw[k][1])
+    # ── Save to file ────────────────────────────────────────────────────
+    try:
+        anim.save(OUTPUT_MP4, writer=FFMpegWriter(fps=fps))
+        print(f"✔ Animation saved → {OUTPUT_MP4.resolve()}")
+    except (RuntimeError, FileNotFoundError):
+        # FFmpeg not found: fall back to a GIF
+        anim.save(FALLBACK_GIF, writer=PillowWriter(fps=fps))
+        print(f"✔ Animation saved → {FALLBACK_GIF.resolve()}")
 
-    # --- smoothing ---
-    azel_smooth = {}
-    for k in ARRAYS:
-        if len(buffers[k]['az']) == buffers[k]['az'].maxlen:
-            azel_smooth[k] = (float(np.mean(buffers[k]['az'])),
-                              float(np.mean(buffers[k]['el'])))
-        else:
-            azel_smooth[k] = azel_raw[k]
+    plt.close(fig)            # avoid duplicate static plot in notebooks
 
-    # --- build ray lists ---
-    origins = []
-    dirs    = []
-    for k, cfg in ARRAYS.items():
-        origins.append(cfg['centre'])
-        dirs.append(az_el_to_unit_vector(*azel_smooth[k]))
-    origins = np.vstack(origins)
-    dirs    = np.vstack(dirs)
-
-    # --- triangulate ---
-    X_est, rms_err = triangulate_multi_rays(origins, dirs)
-    z_ok = MIN_ALT <= X_est[2] <= MAX_ALT
-    dists = np.linalg.norm(X_est - origins, axis=1) if z_ok else [np.nan]*len(ARRAYS)
-
-    # --- time stamp ---
-    t_now = START_TIME + blk * CHUNK / RATE
-
-    # --- console log ---
-    azel_str = " | ".join(
-        f"{k}:({azel_smooth[k][0]:6.1f},{azel_smooth[k][1]:4.1f})"
-        for k in ARRAYS
-    )
-    print(f"Blk {blk:3d} @ {t_now:7.2f}s | {azel_str} | "
-          f"X̂=({X_est[0]:.1f},{X_est[1]:.1f},{X_est[2]:.1f}) m | "
-          f"RMS={rms_err:5.2f} m")
-
-    # --- CSV log ---
-    with open(CSV_OUTPUT, "a", newline="") as f:
-        w = csv.writer(f)
-        row = [blk, f"{t_now:.3f}"]
-        for k in ARRAYS:
-            row += [f"{azel_raw[k][0]:.1f}", f"{azel_raw[k][1]:.1f}",
-                    f"{azel_smooth[k][0]:.1f}", f"{azel_smooth[k][1]:.1f}"]
-        row += [f"{X_est[0]:.3f}", f"{X_est[1]:.3f}", f"{X_est[2]:.3f}",
-                f"{rms_err:.3f}"]
-        row += [f"{d:.3f}" for d in dists]
-        w.writerow(row)
-
-    # Optional real-time pace:
-    # time.sleep(CHUNK / RATE)
-
-# ── tidy up ───────────────────────────────────────────────────────────────
-for h in handles.values():
-    h.close()
-print(f"✅ CSV written to '{CSV_OUTPUT}'")
+# ─────────────────────────── Script entry ───────────────────────────────
+if __name__ == "__main__":
+    main()
