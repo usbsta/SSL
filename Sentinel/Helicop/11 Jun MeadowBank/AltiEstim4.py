@@ -1,15 +1,3 @@
-#!/usr/bin/env python3
-"""
-Real-time “debug” triangulation with FOUR 6-mic arrays (N, S, E, W).
-
-Dependencies
-------------
-NumPy, wave, Utilities.functions.{mic geometries, calculate_delays_for_direction,
-apply_beamforming, apply_bandpass_filter}
-
-Author: ChatGPT (OpenAI-o3) – 2025-06-18
-"""
-
 import numpy as np
 import wave
 import csv
@@ -38,8 +26,8 @@ LOWCUT, HIGHCUT = 180.0, 2000.0     # Hz
 FILTER_ORDER    = 5
 SPEED_OF_SOUND  = 343.0             # m · s⁻¹
 
-AZ_RANGE = np.arange(-180, 181, 1)  # °
-EL_RANGE = np.arange(0, 91, 1)      # °
+AZ_RANGE = np.arange(-180, 181, 2)  # °
+EL_RANGE = np.arange(10, 50, 1)      # °
 
 # UTM zone 56 S centres (Easting, Northing, Alt-m)
 P_N = np.array([322955.1, 6256643.2, 0.0])
@@ -48,25 +36,25 @@ P_E = np.array([322980.8, 6256638.4, 0.0])
 P_W = np.array([322918.0, 6256605.4, 0.0])
 
 # WAV paths – edit as needed
-ROOT = Path("/Users/30068385/OneDrive - Western Sydney University/recordings/Helicop/30_05_25")
+ROOT = Path("/Users/30068385/OneDrive - Western Sydney University/recordings/Helicop/11_06_25")
 ARRAYS = {
     'N': {
-        'wav': ROOT / "N/north.wav",
+        'wav': ROOT / "N.wav",
         'centre': P_N,
         'mics': mic_6_N_black_thin(),
     },
     'S': {
-        'wav': ROOT / "S/south.wav",
+        'wav': ROOT / "S.wav",
         'centre': P_S,
         'mics': mic_6_S_orange(),
     },
     'E': {
-        'wav': ROOT / "E/east.wav",
+        'wav': ROOT / "E.wav",
         'centre': P_E,
         'mics': mic_6_E_orange(),
     },
     'W': {
-        'wav': ROOT / "W/west.wav",
+        'wav': ROOT / "W.wav",
         'centre': P_W,
         'mics': mic_6_W_black(),
     },
@@ -74,7 +62,7 @@ ARRAYS = {
 
 CSV_OUTPUT = "triangulation_debug_4arrays.csv"
 MIN_ALT, MAX_ALT = 0.0, 2000.0       # altitude validity range [m]
-START_TIME, END_TIME = 3437.0, 3498.0  # [s] in the WAV files
+START_TIME, END_TIME = 0.0, 104.0  # [s] in the WAV files
 
 # ── Maths helpers ─────────────────────────────────────────────────────────
 def az_el_to_unit_vector(az_deg: float, el_deg: float) -> np.ndarray:
