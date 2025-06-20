@@ -3,7 +3,7 @@
 3-D visualisation of FOUR 6-mic arrays and the rays defined by manual
 azimuth/elevation angles.  Requires only NumPy & Matplotlib.
 
-Author : ChatGPT (OpenAI-o3) – 2025-06-18
+
 """
 
 import numpy as np
@@ -13,11 +13,31 @@ from mpl_toolkits.mplot3d import Axes3D   # noqa: F401 (registers 3-D projection
 # ── USER INPUT ────────────────────────────────────────────────────────────
 # Angles are ENU: 0° azimuth = North, +90° = East.  Elevation 0–90° up.
 AZEL_DEG = {                           # azimuth [deg], elevation [deg]
-    'N': ( -116.0-30, 35.3),
-    'S': ( -148.7, 37.0),
-    'E': ( -156.0, 36.3),
-    'W': ( -130.7-30, 32.7),
+    'N': ( 0.0, 35.3),
+    'S': ( 1, 37),
+    'E': ( -2.0, 36.3),
+    'W': ( 3.0, 35.7),
 }
+
+
+AZEL_DEG = {                           # azimuth [deg], elevation [deg]
+    'N': ( -102-40, 15),           # -142     -144
+    'S': ( -138-5, 16),            # -141     -143
+    'E': ( -146, 16),              # -144     -146
+    'W': ( -118-30, 12),           # -139     -141
+}
+
+AZEL_DEG = {                           # azimuth [deg], elevation [deg]
+    'N': ( -144, 35.3),
+    'S': ( -143, 37),
+    'E': ( -146, 36.3),
+    'W': ( -141, 35.7),
+}
+
+
+
+
+
 RAY_LENGTH = 20.0   # m – visual length of each arrow
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -142,10 +162,12 @@ ax.set_ylim3d([centre[1] - radius, centre[1] + radius])
 ax.set_zlim3d([centre[2] - radius, centre[2] + radius])
 
 plt.tight_layout()
-plt.show()
+
 
 # ── Console diagnostics ──────────────────────────────────────────────────
 print(f'Estimated source @ {X_est} m')
 print(f'RMS distance to rays      : {rms_error:.2f} m')
 for key, dist in zip(ARRAYS.keys(), dists):
     print(f'Distance from {key} array : {dist:.2f} m')
+
+plt.show()
