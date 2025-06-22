@@ -6,8 +6,6 @@ Reads the CSV created by 'triangulation_debug_4arrays*.py' and plots for any
 selected block the microphone arrays, their acoustic rays, and the least-squares
 intersection X̂ from three different perspectives: top, front and side.
 
-Author : ChatGPT (OpenAI-o3)
-Created: 2025-06-20
 """
 
 import argparse
