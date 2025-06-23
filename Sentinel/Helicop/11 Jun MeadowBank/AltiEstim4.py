@@ -1,14 +1,4 @@
-#!/usr/bin/env python3
-"""
-Real-time “debug” triangulation with FOUR 6-mic arrays (N, S, E, W).
 
-Dependencies
-------------
-NumPy, wave, Utilities.functions.{mic geometries, calculate_delays_for_direction,
-apply_beamforming, apply_bandpass_filter}
-
-Author: ChatGPT (OpenAI-o3) – 2025-06-18
-"""
 
 import numpy as np
 import wave

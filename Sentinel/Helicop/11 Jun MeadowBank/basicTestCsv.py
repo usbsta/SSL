@@ -38,17 +38,17 @@ ARRAY_CENTRES = dict(N=P_N, S=P_S, E=P_E, W=P_W)
 C_MAP = dict(N="darkgreen", S="crimson", E="orange", W="navy")
 
 AZ_OFFSET = {
-    'N': -40.0,
-    'E':  0.0,
-    'W': -30.0,
-    'S':  -5.0,
+    'N': -44.0,
+    'S':  -8.0,
+    'E':   0.0,
+    'W':  -28.0,
 }
 
 EL_OFFSET = {
     'N': 0.0,
-    'E': 0.0,
-    'W': 0.0,
-    'S': 0.0,
+    'S': 1.0,
+    'E': -1.0,
+    'W': 4.0,
 }
 
 def az_el_to_unit_vector(az_deg: float, el_deg: float) -> np.ndarray:
@@ -95,8 +95,8 @@ def make_multi_axes() -> tuple[plt.Figure, list[plt.Axes]]:
 def plot_block(row: pd.Series, axes: list[plt.Axes], ray_len: float = 20.0, clamp_negative_z: bool = True) -> None:
     origins, dirs = [], []
     for key in ("N", "S", "E", "W"):
-        az = row[f"raw_az_{key}"] + AZ_OFFSET.get(key, 0.0)  # apply per-array offset
-        el = row[f"raw_el_{key}"] + EL_OFFSET.get(key, 0.0)
+        az = row[f"smooth_az_{key}"] + AZ_OFFSET.get(key, 0.0)  # apply per-array offset
+        el = row[f"smooth_el_{key}"] + EL_OFFSET.get(key, 0.0)
         d = az_el_to_unit_vector(az, el)
         if d[2] < 0:
             d = -d
