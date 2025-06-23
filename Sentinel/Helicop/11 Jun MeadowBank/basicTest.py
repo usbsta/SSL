@@ -35,9 +35,6 @@ AZEL_DEG = {                           # azimuth [deg], elevation [deg]
 }
 
 
-
-
-
 RAY_LENGTH = 20.0   # m – visual length of each arrow
 # ──────────────────────────────────────────────────────────────────────────
 

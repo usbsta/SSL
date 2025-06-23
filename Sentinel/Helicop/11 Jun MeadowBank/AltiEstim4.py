@@ -38,7 +38,7 @@ P_E = np.array([322980.8, 6256638.4, 0.0])
 P_W = np.array([322918.0, 6256605.4, 0.0])
 
 # WAV paths – edit as needed
-ROOT = Path("/Users/a30068385/OneDrive - Western Sydney University/recordings/Helicop/11_06_25")
+ROOT = Path("/Users/30068385/OneDrive - Western Sydney University/recordings/Helicop/11_06_25")
 ARRAYS = {
     'N': {
         'wav': ROOT / "N.wav",
