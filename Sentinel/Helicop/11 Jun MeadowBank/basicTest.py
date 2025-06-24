@@ -21,10 +21,10 @@ AZEL_DEG = {                           # azimuth [deg], elevation [deg]
 
 
 AZEL_DEG = {                           # azimuth [deg], elevation [deg]
-    'N': ( -102, 15),           # -142     -144
-    'S': ( -138, 16),            # -141     -143
-    'E': ( -146, 16),              # -144     -146
-    'W': ( -118, 12),           # -139     -141
+    'N': ( -102, 15),
+    'S': ( -138, 16),
+    'E': ( -146, 16),
+    'W': ( -118, 12),
 }
 
 AZEL_DEG = {                           # azimuth [deg], elevation [deg]

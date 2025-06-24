@@ -3,9 +3,8 @@
 Four-array localisation (6 mics), live plotting + on-the-fly MP4 recording.
 """
 
-# ── Imports ─────────────────────────────────────────────────────────────
 from collections import deque
-import csv, sys, wave, time
+import csv, sys, wave
 from pathlib import Path
 from typing import Dict, List
 import contextily as ctx
@@ -13,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FFMpegWriter
 from pyproj import Transformer
+import pandas as pd
 
 from Utilities.functions import (
     calculate_delays_for_direction, apply_beamforming, apply_bandpass_filter
@@ -21,7 +21,6 @@ from Utilities.mic_geo import (
     mic_6_N_black_thin, mic_6_S_orange, mic_6_E_orange, mic_6_W_black
 )
 
-# ── Configuration (idéntica salvo cambios de animación) ─────────────────
 ROOT = Path("/Users/30068385/OneDrive - Western Sydney University/recordings/Helicop/11_06_25")
 
 P_N = np.array([322_955.1, 6_256_643.2, 0.0])
@@ -43,17 +42,16 @@ AZ_OFFSET = {'N': -44.0, 'S': -8.0, 'E': 0.0, 'W': -28.0}
 EL_OFFSET = {'N': 0.0,  'S': 1.0,  'E': -1.0, 'W': 4.0}
 
 RATE, CHUNK = 48_000, int(0.1 * 48_000)
-LOWCUT, HIGHCUT, FILTER_ORDER = 180.0, 700.0, 5
+LOWCUT, HIGHCUT, FILTER_ORDER = 180.0, 2000.0, 5
 C_SOUND = 343.0
 AZIM_RANGE = np.arange(-180, 181, 1)
 EL_RANGE   = np.arange(10,  51,  1)
 SMOOTH_LEN = 1
-START_TIME_S, END_TIME_S = 57, 70           # s dentro del WAV
+START_TIME_S, END_TIME_S = 57, 70
 
 VERBOSE, MAX_PRINT = True, 100
-DRAW_RAYS, RAY_LEN = True, 600.0            # m
+DRAW_RAYS, RAY_LEN = True, 600.0
 
-# ── Transformadores y mapa base ─────────────────────────────────────────
 _trU2W = Transformer.from_crs(32756, 4326, always_xy=True)
 _trW2M = Transformer.from_crs(4326, 3857, always_xy=True)
 utm2merc = lambda e,n: np.array(_trW2M.transform(*_trU2W.transform(e,n)), dtype=np.float64)
@@ -74,11 +72,18 @@ fig, ax = plt.subplots(figsize=(8,8))
 ax.imshow(img, extent=(xminL,xmaxL,yminL,ymaxL), origin='upper', zorder=0)
 for k in ARRAY_KEYS:
     xy = P_merc[k]-P0; ax.scatter(*xy, marker='^', edgecolor='k', s=80); ax.text(*(xy+[3,3]),f' {k}',color='white')
-traj_line, = ax.plot([],[],'o-',color='lime',lw=2,label='X̂')
+traj_line, = ax.plot([],[],'o-',color='lime',lw=2,label='X̂ smooth')
+
+heli_df = pd.read_csv("interpolated_flight_data_100ms.csv")
+lon, lat = heli_df['Longitude'].values, heli_df['Latitude'].values
+heli_x, heli_y = _trW2M.transform(lon, lat)
+heli_xy_local = np.vstack([heli_x, heli_y]).T - P0
+ax.plot(heli_xy_local[:,0], heli_xy_local[:,1], '-', color='deepskyblue', lw=1.5, label='Helicopter (GT)')
+
 err_text = ax.text(0.97,0.02,'',transform=ax.transAxes,ha='right',va='bottom',color='white',backgroundcolor='black')
 ax.set_xlim(-margin, margin); ax.set_ylim(-margin, margin); ax.set_aspect('equal')
+ax.legend(loc='upper right')
 
-# ── Delay lookup por arreglo ────────────────────────────────────────────
 DELAY_LUT = {}
 for k in ARRAY_KEYS:
     m = ARRAYS[k]['mics']; lut = np.empty((len(AZIM_RANGE), len(EL_RANGE), m.shape[0]), np.int32)
@@ -89,6 +94,7 @@ for k in ARRAY_KEYS:
 
 smooth = {k:{'az':deque(maxlen=SMOOTH_LEN),'el':deque(maxlen=SMOOTH_LEN)} for k in ARRAY_KEYS}
 traj_xy: List[np.ndarray] = []
+
 
 def azel2unit(az,el):
     a,e=np.deg2rad([az,el]); return np.array([np.cos(e)*np.sin(a), np.cos(e)*np.cos(a), np.sin(e)])
@@ -129,25 +135,48 @@ def process_block(i,wf,writer):
     dirs,orig=np.vstack(dirs),np.vstack(orig)
 
     X,rms=ls_triang(orig,dirs); X[2]=max(X[2],0)
-    local=utm2merc(*X[:2])-P0; traj_xy.append(local)
-    traj_line.set_data(*zip(*traj_xy)); err_text.set_text(f'RMS={rms:.1f} m')
+    traj_xy.append(utm2merc(*X[:2]) - P0)
+    traj_line.set_data(*zip(*traj_xy))
+
+    # Triangulación sin suavizado
+    dirs_raw = []
+    for k in ARRAY_KEYS:
+        saz_raw = raw_az[k] + AZ_OFFSET[k]
+        sel_raw = raw_el[k] + EL_OFFSET[k]
+        dirs_raw.append(azel2unit(saz_raw, sel_raw))
+    dirs_raw = np.vstack(dirs_raw)
+    X_raw, rms_raw = ls_triang(orig, dirs_raw)
+    X_raw[2] = max(X_raw[2], 0)
+    X_raw_local = utm2merc(*X_raw[:2]) - P0
+
+    if hasattr(process_block, 'pts'): process_block.pts[0].remove()
+    if hasattr(process_block, 'ptraw'): process_block.ptraw.remove()
+
+    ptraw = ax.plot(X_raw_local[0], X_raw_local[1], 'o', color='red', label='X̂ raw' if i == 0 else None)[0]
+    ptsmooth = ax.plot(traj_xy[-1][0], traj_xy[-1][1], 'o', color='lime', label='X̂ smooth' if i == 0 else None)[0]
+    process_block.ptraw = ptraw
+    process_block.pts = [ptsmooth]
+
+    err_text.set_text(f'RMS={rms:.1f} m')
 
     if DRAW_RAYS:
         if hasattr(process_block,'hs'):
             for h in process_block.hs: h.remove()
-        hs=[]
-        for d,P in zip(dirs,orig):
-            end=utm2merc(*(P[:2]+RAY_LEN*d[:2]))-P0
-            h,=ax.plot([local[0],end[0]],[local[1],end[1]],color='orange',lw=1,alpha=.6)
+        colors = {'N': 'yellow', 'S': 'orange', 'E': 'red', 'W': 'cyan'}
+        hs = []
+        for k, d, P in zip(ARRAY_KEYS, dirs, orig):
+            ray_start = utm2merc(*P[:2]) - P0
+            ray_end = utm2merc(*(P[:2] + RAY_LEN * d[:2])) - P0
+            h, = ax.plot([ray_start[0], ray_end[0]], [ray_start[1], ray_end[1]], color=colors[k], lw=1.5, alpha=0.7)
             hs.append(h)
-        process_block.hs=hs
+        process_block.hs = hs
 
     writer.writerow([i,f'{START_TIME_S+i*CHUNK/RATE:.3f}',
                      *[f'{raw_az[k]:.1f}' for k in ARRAY_KEYS],
                      *[f'{raw_el[k]:.1f}' for k in ARRAY_KEYS],
                      *[f'{np.mean(smooth[k]["az"])+AZ_OFFSET[k]:.1f}' for k in ARRAY_KEYS],
                      *[f'{np.mean(smooth[k]["el"])+EL_OFFSET[k]:.1f}' for k in ARRAY_KEYS],
-                     f'{local[0]:.3f}',f'{local[1]:.3f}',f'{rms:.3f}',
+                     f'{traj_xy[-1][0]:.3f}',f'{traj_xy[-1][1]:.3f}',f'{rms:.3f}',
                      *[f'{np.linalg.norm(X-ARRAYS[k]["centre"]):.3f}' for k in ARRAY_KEYS]])
 
     if VERBOSE and (MAX_PRINT is None or i<MAX_PRINT):
@@ -167,7 +196,6 @@ def main():
     for k in ARRAY_KEYS: wf[k].setpos(s_f)
     n_blocks=(e_f-s_f)//CHUNK
 
-    # CSV + MP4 writer
     with open(CSV_OUTPUT,'w',newline='') as fcsv, \
          FFMpegWriter(fps=10,bitrate=2400).saving(fig, VIDEO_OUTPUT, dpi=150) as vid:
         wr=csv.writer(fcsv)
@@ -182,7 +210,7 @@ def main():
         for i in range(n_blocks):
             ok=process_block(i,wf,wr)
             fig.canvas.draw(); fig.canvas.flush_events(); plt.pause(0.001)
-            vid.grab_frame()           # añade frame al MP4
+            vid.grab_frame()
             if not ok: break
 
     for k in ARRAY_KEYS: wf[k].close()
