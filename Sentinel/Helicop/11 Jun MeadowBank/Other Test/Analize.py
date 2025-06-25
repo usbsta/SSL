@@ -7,8 +7,8 @@ avg=40
 
 # Apply 5-sample moving average to raw azimuth and elevation for all arrays
 for array in ['N', 'S', 'E', 'W']:
-    df[f"smooth_raw_el_{array}"] = df[f"raw_el_{array}"].rolling(window=avg, center=True).mean()
-    df[f"smooth_raw_az_{array}"] = df[f"raw_az_{array}"].rolling(window=avg, center=True).mean()
+    df[f"smooth_raw_el_{array}"] = df[f"raw_el_{array}"].rolling(window=avg, center=True).median()
+    df[f"smooth_raw_az_{array}"] = df[f"raw_az_{array}"].rolling(window=avg, center=True).median()
 
 # Define time window
 start_time = 0.0
