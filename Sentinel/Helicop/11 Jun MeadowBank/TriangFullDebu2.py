@@ -43,11 +43,14 @@ ARRAYS: Dict[str, dict] = {
     'W': {'wav': ROOT / "W.wav", 'centre': P_W, 'mics': mic_6_W_black()},
 }
 
-CSV_OUTPUT   = Path("triangulation_full_NoSmooth.csv")
+CSV_OUTPUT   = Path("triangulation_full_NoSmooth2.csv")
 VIDEO_OUTPUT = Path("triangulation_full_NoSmooth.mp4")
 
-AZ_OFFSET = {'N': -44.0, 'S': -8.0, 'E':  0.0, 'W': -28.0}
-EL_OFFSET = {'N':   0.0, 'S':  1.0, 'E': -1.0, 'W':   4.0}
+#AZ_OFFSET = {'N': -44.0, 'S': -8.0, 'E':  0.0, 'W': -28.0}
+#EL_OFFSET = {'N':   0.0, 'S':  1.0, 'E': -1.0, 'W':   4.0}
+
+AZ_OFFSET = {'N':   0.0, 'S':  0.0, 'E':  0.0, 'W':   0.0}
+EL_OFFSET = {'N':   0.0, 'S':  0.0, 'E':  0.0, 'W':   0.0}
 
 RATE, CHUNK = 48_000, int(0.1 * 48_000)       # 100 ms blocks
 LOWCUT, HIGHCUT, FILTER_ORDER = 180.0, 2000.0, 5
