@@ -42,7 +42,7 @@ from Utilities.mic_geo import (
 
 # ─────── FILE PATHS & GEOMETRY ──────────────────────────────────────────
 ROOT = Path("/Users/a30068385/OneDrive - Western Sydney University/recordings/Helicop/11_06_25")
-FLIGHT_CSV = Path("interpolated_flight_data_100ms.csv")
+FLIGHT_CSV = Path("../interpolated_flight_data_100ms.csv")
 
 P_N = np.array([322_955.1, 6_256_643.2, 0.0])
 P_S = np.array([322_951.6, 6_256_580.0, 0.0])

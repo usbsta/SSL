@@ -29,7 +29,7 @@ from Utilities.mic_geo import (
 )
 
 # ── Paths & geometry ─────────────────────────────────────────────────────
-ROOT = Path("/Users/a30068385/OneDrive - Western Sydney University/recordings/Helicop/11_06_25")
+ROOT = Path("/Users/30068385/OneDrive - Western Sydney University/recordings/Helicop/11_06_25")
 
 P_N = np.array([322_955.1, 6_256_643.2, 0.0])
 P_S = np.array([322_951.6, 6_256_580.0, 0.0])
@@ -97,7 +97,7 @@ traj_raw_line, = ax.plot([], [], 'o--', color='red', lw=1.5,
                          label='X̂ raw')
 
 # ── Helicopter ground-truth track (optional) ─────────────────────────────
-heli_df = pd.read_csv("interpolated_flight_data_100ms.csv")
+heli_df = pd.read_csv("../interpolated_flight_data_100ms.csv")
 lon, lat = heli_df['Longitude'].values, heli_df['Latitude'].values
 heli_x, heli_y = _trW2M.transform(lon, lat)
 heli_xy_local = np.vstack([heli_x, heli_y]).T - P0
